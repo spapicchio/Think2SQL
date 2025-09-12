@@ -1,19 +1,23 @@
 import logging
+import os
+from functools import lru_cache
 
 import datasets
+from NL2SQLEvaluator.db_executor import BaseSQLDBExecutor
+from NL2SQLEvaluator.orchestrator_state import AvailableDialect
 from datasets import DatasetDict, concatenate_datasets
 
-from think2sql.configs import CommonScriptArguments
+from think2sql.configs import SFTScriptArguments
 from think2sql.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-def get_dataset(args: CommonScriptArguments) -> DatasetDict:
+def get_dataset(args: SFTScriptArguments) -> DatasetDict:
     """Load a dataset or a mixture of datasets based on the configuration.
 
     Args:
-        args (CommonScriptArguments): Script arguments containing dataset configuration.
+        args (SFTScriptArguments): Script arguments containing dataset configuration.
 
     Returns:
         DatasetDict: The loaded datasets.
@@ -64,3 +68,16 @@ def get_dataset(args: CommonScriptArguments) -> DatasetDict:
 
     else:
         raise ValueError("Either `dataset_name` or `dataset_mixture` must be provided")
+
+
+@lru_cache(maxsize=100)
+def utils_get_engine(relative_base_path, db_executor: AvailableDialect, db_id: str, *args,
+                     **kwargs) -> BaseSQLDBExecutor:
+    try:
+        if db_executor == AvailableDialect.sqlite:
+            from NL2SQLEvaluator.db_executor.sqlite_executor import SqliteDBExecutor
+            return SqliteDBExecutor.from_uri(
+                relative_base_path=os.path.join(relative_base_path, db_id, f"{db_id}.sqlite"), *args, **kwargs)
+    except Exception as e:
+        raise ValueError(f"Error initializing database executor for {relative_base_path}: {e}")
+    raise ValueError(f"Database executor not supported: {db_executor}. Supported: {list(AvailableDialect)}")
