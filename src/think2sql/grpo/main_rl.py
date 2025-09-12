@@ -1,11 +1,11 @@
 from trl import ModelConfig, TrlParser
 
 from think2sql.configs import GRPOScriptArguments, GRPOConfig
-from think2sql.grpo.rl_trainer import GRPOCustomTrainer
+from think2sql.grpo.think2sql_trainer import Think2SQLTrainer
 
 
 def main_rl(script_args: GRPOScriptArguments, training_args: GRPOConfig, model_args: ModelConfig):
-    trainer = GRPOCustomTrainer(script_args, training_args, model_args)
+    trainer = Think2SQLTrainer(script_args, training_args, model_args)
     trainer.train()
 
 
