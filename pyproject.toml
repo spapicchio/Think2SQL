@@ -1,21 +1,32 @@
 [project]
 name = "think2sql"
 version = "0.1.0"
+authors = [
+    { name = "Simone Papicchio", email = "simone.papicchio@polito.it" },
+    { name = "Simone Rossi", email = "simone.rossi.93@gmail.com" },
+]
 description = "Official implementation of Think2SQL"
-readme = "README.md"
-requires-python = ">=3.10"
+# readme = "README.md"
+requires-python = ">=3.10,<3.13"  # vllm needs Python <3.13 with dev 
 dependencies = [
-    "accelerate==1.4.0",
+    "flash-attn>=2.7.4.post1,<2.8.0",
+    "transformers>=4.56.0",
+    "vllm==0.8.5.post1",
     "datasets>=4.0.0",
     "deepspeed==0.16.8",
     "hf-transfer>=0.1.9",
     "jinja2>=3.1.6",
     "loguru>=0.7.3",
-    "nl2sqlevaluator>=1.1.0",
+    "nl2sqlevaluator>=1.1.2",
     "python-dotenv>=1.1.1",
     "sentencepiece>=0.2.1",
-    "torch==2.6.0",
-    "transformers==4.52.3",
-    "trl[vllm]==0.18.0",
+    "setuptools>=80.9.0",
     "wandb>=0.21.3",
+    "accelerate>=1.4.0",
+    "trl>=0.23.0",
+    "bitsandbytes>=0.47.0",
 ]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
