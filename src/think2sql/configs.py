@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Optional
 
 import trl
 
@@ -24,7 +24,7 @@ class DatasetMixtureConfig:
 
 
 @dataclass
-class CommonScriptArguments(trl.ScriptArguments):
+class SFTScriptArguments(trl.ScriptArguments):
     """
     Extended version of ScriptArguments with support for dataset mixtures.
 
@@ -52,11 +52,33 @@ class CommonScriptArguments(trl.ScriptArguments):
 
     # Override the dataset_name to make it optional
     dataset_name: Optional[str] = field(
-        default=None, metadata={"help": "Dataset name. Can be omitted if using dataset_mixture."}
+        default='simone-papicchio/bird',
+        metadata={"help": "Dataset name. Can be omitted if using dataset_mixture."}
     )
-    dataset_mixture: Optional[dict[str, Any]] | DatasetMixtureConfig = field(
+    dataset_test_split: Optional[str] = field(
+        default='dev',
+        metadata={"help": "The dataset split to use for evaluation."},
+    )
+    dataset_train_split: Optional[str] = field(
+        default='train',
+        metadata={"help": "The dataset split to use for training."},
+    )
+
+    dataset_mixture: Optional[DatasetMixtureConfig] = field(
         default=None,
         metadata={"help": "Configuration for creating dataset mixtures with advanced options like shuffling."},
+    )
+
+    assistant_response_col_name: str = field(
+        default=None,
+        metadata={"help": "The assistant response column name in the dataset used for SFT."},
+    )
+
+    add_sample_rows_strategy: Optional[str] = field(
+        default='inline',
+        metadata={
+            "help": "Strategy to add sample rows to the prompt. Options: 'random', 'similarity', or None."
+        },
     )
 
     def __post_init__(self):
@@ -110,10 +132,6 @@ class GRPOConfig(trl.GRPOConfig):
     args for callbacks, benchmarks etc
     """
 
-    benchmarks: list[str] = field(
-        default_factory=lambda: [],
-        metadata={"help": "The benchmarks to run after training."},
-    )
     callbacks: list[str] = field(
         default_factory=lambda: [],
         metadata={"help": "The callbacks to run during training."},
@@ -125,18 +143,20 @@ class GRPOConfig(trl.GRPOConfig):
     num_completions_to_print: int = field(default=0, metadata={"help": "Number of completions to print."})
     overwrite_hub_revision: bool = field(default=False, metadata={"help": "Whether to overwrite the Hub revision."})
     push_to_hub_revision: bool = field(default=False, metadata={"help": "Whether to push to a Hub revision/branch."})
-    system_prompt: Optional[str] = field(
-        default=None,
-        metadata={"help": "The optional system prompt to use."},
-    )
+
     wandb_log_unique_prompts: bool = field(
         default=True,
         metadata={
             "help": "Whether to log the unique prompts to wandb. This will create a new run for each unique prompt."
         },
     )
+    log_level: str = field(
+        default='INFO',
+        metadata={"help": "The logging level to use. Options: 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'."}
+    )
+
     wandb_entity: Optional[str] = field(
-        default=None,
+        default='spapicchio-politecnico-di-torino',
         metadata={"help": "The entity to store runs under."},
     )
     wandb_project: Optional[str] = field(
@@ -175,7 +195,7 @@ class SFTConfig(trl.SFTConfig):
     overwrite_hub_revision: bool = field(default=False, metadata={"help": "Whether to overwrite the Hub revision."})
     push_to_hub_revision: bool = field(default=False, metadata={"help": "Whether to push to a Hub revision/branch."})
     wandb_entity: Optional[str] = field(
-        default=None,
+        default='spapicchio-politecnico-di-torino',
         metadata={"help": "The entity to store runs under."},
     )
     wandb_project: Optional[str] = field(
@@ -189,7 +209,7 @@ class SFTConfig(trl.SFTConfig):
 
 
 @dataclass
-class GRPOScriptArguments(CommonScriptArguments):
+class GRPOScriptArguments(SFTScriptArguments):
     """Script arguments for the GRPO training script."""
 
     reward_funcs: list[str] = field(
@@ -200,13 +220,8 @@ class GRPOScriptArguments(CommonScriptArguments):
         },
     )
     relative_db_base_path: str = field(
-        default="data/bird_dev/dev_databases",
+        default="data/bird/train_databases",
         metadata={"help": "Relative path to the database files directory"}
-    )
-
-    max_completion_len: int = field(
-        default=16384,
-        metadata={"help": "Maximum number of characters in completion."},
     )
 
     prompt_folder: str = field(
@@ -215,17 +230,12 @@ class GRPOScriptArguments(CommonScriptArguments):
     )
 
     user_prompt_name: str = field(
-        default="base_think_user_prompt",
+        default="base_think_user_prompt.jinja",
         metadata={"help": "The user prompt name to use from the chat template. "
                           "The available prompts are in `prompt_folder`"}
     )
     system_prompt_name: str = field(
-        default="base_think_system_prompt",
+        default="base_think_system_prompt.jinja",
         metadata={"help": "The system prompt name to use from the chat template. "
                           "The available prompts are in `prompt_folder`"}
-    )
-
-    assistant_response_col_name: str = field(
-        default="sft_response",
-        metadata={"help": "The assistant response column name in the dataset used for SFT."},
     )
