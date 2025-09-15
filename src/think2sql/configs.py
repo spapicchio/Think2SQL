@@ -55,6 +55,12 @@ class SFTScriptArguments(trl.ScriptArguments):
         default='simone-papicchio/bird',
         metadata={"help": "Dataset name. Can be omitted if using dataset_mixture."}
     )
+
+    relative_db_base_path: str = field(
+        default="data/bird/train_databases",
+        metadata={"help": "Relative path to the database files directory"}
+    )
+
     dataset_test_split: Optional[str] = field(
         default='dev',
         metadata={"help": "The dataset split to use for evaluation."},
@@ -174,16 +180,13 @@ class SFTConfig(trl.SFTConfig):
     """
     args for callbacks, benchmarks etc
     """
-
-    benchmarks: list[str] = field(
-        default_factory=lambda: [],
-        metadata={"help": "The benchmarks to run after training."},
-    )
     callbacks: list[str] = field(
         default_factory=lambda: [],
         metadata={"help": "The callbacks to run during training."},
     )
+
     chat_template: Optional[str] = field(default=None, metadata={"help": "The chat template to use."})
+
     system_prompt: Optional[str] = field(
         default=None,
         metadata={"help": "The optional system prompt to use for benchmarking."},
@@ -209,21 +212,11 @@ class SFTConfig(trl.SFTConfig):
 
 
 @dataclass
-class GRPOScriptArguments(SFTScriptArguments):
-    """Script arguments for the GRPO training script."""
-
-    reward_funcs: list[str] = field(
-        default_factory=lambda: ["EX", "QATCH", "format", "tag_count"],
-        metadata={
-            "help": "List of reward functions."
-                    ' Possible values: "EX", "QATCH", "format", "tag_count"'
-        },
+class EvaluateArgs(SFTScriptArguments):
+    task_name: str = field(
+        default='EX',
+        metadata={"help": "The name of the evaluation task."},
     )
-    relative_db_base_path: str = field(
-        default="data/bird/train_databases",
-        metadata={"help": "Relative path to the database files directory"}
-    )
-
     prompt_folder: str = field(
         default="prompts",
         metadata={"help": "The folder where the jinja prompts are stored."},
@@ -238,4 +231,37 @@ class GRPOScriptArguments(SFTScriptArguments):
         default="base_think_system_prompt.jinja",
         metadata={"help": "The system prompt name to use from the chat template. "
                           "The available prompts are in `prompt_folder`"}
+    )
+
+    cache_db_connections_path: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "Path of the folder where to store the executed query. In case of multi-gpu, one database per process will be created. "
+                    "It has to be manually merged into one cache DB"
+        },
+    )
+
+    target_sql_cache_db_path: Optional[str] = field(
+        default='.think2sql_cache/target_cached_query.sqlite',
+        metadata={
+            "help": "Path to the cache database with the target queries. Can be different from the db of the prediction."},
+    )
+
+    pred_sql_cache_db_path: Optional[str] = field(
+        default='.think2sql_cache/pred_cached_query.sqlite',
+        metadata={
+            "help": "Path to the cache database with the predicted queries. Can be different from the db of the target."},
+    )
+
+
+@dataclass
+class GRPOScriptArguments(EvaluateArgs):
+    """Script arguments for the GRPO training script."""
+
+    reward_funcs: list[str] = field(
+        default_factory=lambda: ["EX", "QATCH", "format", "tag_count"],
+        metadata={
+            "help": "List of reward functions."
+                    ' Possible values: "EX", "QATCH", "format", "tag_count"'
+        },
     )
