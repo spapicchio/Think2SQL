@@ -1,7 +1,11 @@
+import os
+import pathlib
 import re
+import threading
 from statistics import mean
 from typing import Callable
 
+from NL2SQLEvaluator.db_executor.sqlite_executor import SqliteCacheDB
 from NL2SQLEvaluator.metric_executor.evaluator_orchestrator import OrchestratorInput
 from NL2SQLEvaluator.metric_executor.evaluator_orchestrator import (
     evaluator_orchestrator,
@@ -12,6 +16,44 @@ from think2sql.configs import GRPOScriptArguments
 from think2sql.logger import get_logger
 from think2sql.utils.data import utils_get_engine
 from think2sql.utils.sql import get_sql_from_generation
+
+# This is needed to have a different cache for each process
+# when using multiprocessing training
+REGISTRY_REWARD_CACHE = {}
+_lock = threading.Lock()
+
+
+def _get_cache_pred_db_based_on_pid(
+        pid,
+        cache_db_connections_path,
+        target_sql_cache_db_path,
+        pred_sql_cache_db_path=None,
+) -> SqliteCacheDB | None:
+    # the registry is needed for the multiprocessing training
+    if cache_db_connections_path is not None:
+        cache_db_connections_path = pathlib.Path(cache_db_connections_path)
+
+        path = cache_db_connections_path / str(pid) / f"cache_pred_{pid}.sqlite"
+
+        path.parent.mkdir(mode=0o777, parents=True, exist_ok=True)
+        # create file
+        if not path.exists():
+            path.touch(mode=0o777)
+        path = str(path)
+
+        with _lock:
+            if pid not in REGISTRY_REWARD_CACHE:
+                REGISTRY_REWARD_CACHE[pid] = SqliteCacheDB.from_uri(
+                    relative_base_path=path,
+                    cache_db=SqliteCacheDB.from_uri(
+                        relative_base_path=target_sql_cache_db_path,
+                        cache_db=SqliteCacheDB.from_uri(relative_base_path=pred_sql_cache_db_path)
+                    )
+                    if target_sql_cache_db_path
+                    else None,
+                )
+        return REGISTRY_REWARD_CACHE[pid]
+    return None
 
 
 def _check_crud_sql_(query):
@@ -27,28 +69,37 @@ def _check_crud_sql_(query):
     return query
 
 
-def get_execution_acc_reward(relative_db_base_path):
+def get_execution_acc_reward(
+        relative_db_base_path, cache_db_connections_path, target_sql_cache_db_path, pred_sql_cache_db_path
+):
     def ex_reward(
             completions: list[dict],
             target_sql: list[str],
             db_id: list[str],
             *args,
             **kwargs,
-    ):
-        model_prediction = [completion[0]["content"] for completion in completions]
+    ) -> list[float]:
+        # completion is STR when used in CorpusLevelMetric from lighteval
+        model_prediction = [completion[0]["content"]
+                            if not isinstance(completion, str) else completion
+                            for completion in completions]
         predicted_sqls = [
             _check_crud_sql_(get_sql_from_generation(pred)) for pred in model_prediction
         ]
-
+        cache = _get_cache_pred_db_based_on_pid(
+            os.getpid(), cache_db_connections_path, target_sql_cache_db_path, pred_sql_cache_db_path
+        )
         orchestrator_input = OrchestratorInput(
             target_queries=target_sql,
             predicted_queries=predicted_sqls,
             executor=[
-                utils_get_engine(relative_db_base_path, AvailableDialect("sqlite"), id_)
+                utils_get_engine(
+                    relative_db_base_path, AvailableDialect("sqlite"), id_, cache
+                )
                 for id_ in db_id
             ],
             metrics_to_calculate=[
-                AvailableMetrics.EXECUTION_ACCURACY,
+                AvailableMetrics.EXECUTION_ACCURACY.value,
             ],
         )
         results = evaluator_orchestrator.invoke(orchestrator_input)
@@ -60,7 +111,9 @@ def get_execution_acc_reward(relative_db_base_path):
     return ex_reward
 
 
-def get_qatch_reward(relative_db_base_path):
+def get_qatch_reward(
+        relative_db_base_path, cache_db_connections_path, target_sql_cache_db_path, pred_sql_cache_db_path
+):
     def qatch_reward(
             completions: list[dict],
             target_sql: list[str],
@@ -72,23 +125,26 @@ def get_qatch_reward(relative_db_base_path):
         predicted_sqls = [
             _check_crud_sql_(get_sql_from_generation(pred)) for pred in model_prediction
         ]
+        cache = _get_cache_pred_db_based_on_pid(
+            os.getpid(), cache_db_connections_path, target_sql_cache_db_path, pred_sql_cache_db_path
+        )
         orchestrator_input = OrchestratorInput(
             target_queries=target_sql,
             predicted_queries=predicted_sqls,
             executor=[
-                utils_get_engine(relative_db_base_path, AvailableDialect("sqlite"), id_)
+                utils_get_engine(
+                    relative_db_base_path, AvailableDialect("sqlite"), id_, cache
+                )
                 for id_ in db_id
             ],
             metrics_to_calculate=[
-                AvailableMetrics.CELL_PRECISION,
-                AvailableMetrics.CELL_RECALL,
-                AvailableMetrics.TUPLE_CARDINALITY,
+                AvailableMetrics.CELL_PRECISION.value,
+                AvailableMetrics.CELL_RECALL.value,
+                AvailableMetrics.TUPLE_CARDINALITY.value,
             ],
         )
         results = evaluator_orchestrator.invoke(orchestrator_input)
-        results = [
-            mean(list(result.values())) for result in results
-        ]
+        results = [mean(list(result.values())) for result in results]
         return results
 
     return qatch_reward
@@ -131,8 +187,19 @@ def get_reward_funcs(script_args: GRPOScriptArguments) -> list[Callable]:
     logger = get_logger(__name__)
 
     REWARD_FUNCS_REGISTRY = {
-        "EX": get_execution_acc_reward(script_args.relative_db_base_path),
-        "QATCH": get_qatch_reward(script_args.relative_db_base_path),
+        "EX": get_execution_acc_reward(
+            script_args.relative_db_base_path,
+            script_args.cache_db_connections_path,
+            script_args.target_sql_cache_db_path,
+            script_args.pred_sql_cache_db_path,
+        ),
+        "QATCH": get_qatch_reward(
+            script_args.relative_db_base_path,
+            script_args.cache_db_connections_path,
+            script_args.target_sql_cache_db_path,
+            script_args.pred_sql_cache_db_path,
+
+        ),
         "format": format_reward,
         "tag_count": tag_count_reward,
     }

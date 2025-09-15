@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Merge all prediction cache SQLite files into:
-  .think2sql_cache/pred_cache.sqlite
+  .think2sql_cache/pred_cached_query.sqlite
 
 Assumptions:
 - Each source DB has a single table `cache_data`.
@@ -14,7 +14,7 @@ import sqlite3
 import sys
 
 ROOT = Path(".think2sql_cache").resolve()
-DEST = ROOT / "pred_cache.sqlite"
+DEST = ROOT / "pred_cached_query.sqlite"
 EXCLUDE_NAMES = {"target_cached_query.sqlite", DEST.name}
 
 # ---------- small helpers ----------
