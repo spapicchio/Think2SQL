@@ -1,7 +1,8 @@
 #!/bin/bash
 set -e
-
-BASE_WORK='/workspaces/Think2SQL'
+OMP_NUM_THREADS=16
+#BASE_WORK='/workspaces/Think2SQL'
+BASE_WORK='/home/papicchi/Think2SQL'
 
 # Check if job script is provided
 if [ -z "$1" ]; then
@@ -42,7 +43,11 @@ if [ -z "$2" ]; then
   LOG_FOLDER="./tmux_log/$(date +%Y-%m-%d)/$(date +%H-%M-%S)-${JOB_NAME}-${FAKE_JOB_ID}"
   mkdir -p "${LOG_FOLDER}"
   tmux new-session -d -s "${JOB_NAME}-${FAKE_JOB_ID}" \
-    "JOB_NAME=${JOB_NAME} MY_SLURM_JOB_ID=${MY_SLURM_JOB_ID} ${FAKE_JOB_PATH} 2>&1 | \
+    "WORK=${WORK} \
+    ALL_CCFRWORK=${ALL_CCFRWORK} \
+    JOB_NAME=${JOB_NAME} \
+    MY_SLURM_JOB_ID=${MY_SLURM_JOB_ID} \
+    ${FAKE_JOB_PATH} 2>&1 | \
     stdbuf -oL tee -a ${LOG_FOLDER}/all.log | \
     stdbuf -oL tee >(stdbuf -oL grep 'WARNING' >> ${LOG_FOLDER}/warning.log) | \
     stdbuf -oL tee >(stdbuf -oL grep 'ERROR' >> ${LOG_FOLDER}/error.log)"
