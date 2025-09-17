@@ -174,6 +174,18 @@ class GRPOConfig(trl.GRPOConfig):
         metadata={"help": "The group to store runs under."},
     )
 
+    def __post_init__(self):
+        super().__post_init__()
+        if isinstance(self.sync_ref_model, str):
+            if self.sync_ref_model.lower() in ("true", "1", "yes"):
+                self.sync_ref_model = True
+            elif self.sync_ref_model.lower() in ("false", "0", "no"):
+                self.sync_ref_model = False
+            else:
+                raise ValueError(
+                    "`sync_ref_model` must be a boolean or a string representing a boolean ('true', 'false', '1', '0', 'yes', 'no')"
+                )
+
 
 @dataclass
 class SFTConfig(trl.SFTConfig):
