@@ -17,7 +17,7 @@ max_completion_length: 4096
 mask_truncated_completions: true  # When enabled, truncated completions are excluded from the loss calculation
 gradient_accumulation_steps: 32
 # ---------------------  New Params ---------------------
-loss_type: dr_grpo  # Available: 'grpo', 'dr_grpo', 'dapo', 'bnpo'
+loss_type: 'dapo'  # Available: 'grpo', 'dr_grpo', 'dapo', 'bnpo'
 beta: 0.0 # KL coefficient. If 0.0 (default), the reference model is not loaded, reducing memory usage and improving training speed.
 delta: null  #  Enables the upper clipping bound in two-sided GRPO loss when set to a float
 epsilon_high: null  # Upper clipping bound for GRPO loss Paper DAPO recommends 0.28.
@@ -87,7 +87,13 @@ save_strategy: "steps"
 save_steps: 5
 save_total_limit: 1
 seed: 42
-temperature: 0.7
+wandb_log_unique_prompts: true
+
+# https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct/blob/main/generation_config.json
+temperature: 0.7        # vendor default
+top_p: 0.8              # vendor default (add this; it’s in the model config)
+top_k: 20               # vendor default
+repetition_penalty: 1.1 # vendor default
 optim: adamw_8bit
 wandb_entity: spapicchio-politecnico-di-torino
 wandb_project: think2sql
