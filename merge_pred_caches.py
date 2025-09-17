@@ -9,22 +9,24 @@ Assumptions:
 - Append rows with INSERT OR IGNORE (dedup via your unique key, e.g., hash_key).
 """
 
-from pathlib import Path
 import sqlite3
 import sys
+from pathlib import Path
 
-ROOT = Path(".think2sql_cache").resolve()
-DEST = ROOT / "pred_cached_query.sqlite"
-EXCLUDE_NAMES = {"target_cached_query.sqlite", DEST.name}
+import fire
+
 
 # ---------- small helpers ----------
 
-def list_source_dbs(root: Path) -> list[Path]:
-    """Find all .sqlite files under ROOT, excluding destination and target cache."""
+def list_source_dbs(root: Path, excluded_names) -> list[Path]:
+    """Find all .sqlite files under ROOT, excluding destination and target cache.
+    :param excluded_names:
+    """
     return sorted(
         p for p in root.rglob("*.sqlite")
-        if p.is_file() and p.name not in EXCLUDE_NAMES
+        if p.is_file() and p.name not in excluded_names
     )
+
 
 def table_exists(conn: sqlite3.Connection, table: str, schema: str = "main") -> bool:
     cur = conn.execute(
@@ -33,6 +35,7 @@ def table_exists(conn: sqlite3.Connection, table: str, schema: str = "main") -> 
     row = cur.fetchone()
     cur.close()
     return row is not None
+
 
 def get_create_table_sql(conn: sqlite3.Connection, table: str, schema: str = "main") -> str | None:
     """Return CREATE TABLE statement for schema.table, or None."""
@@ -43,12 +46,14 @@ def get_create_table_sql(conn: sqlite3.Connection, table: str, schema: str = "ma
     cur.close()
     return row[0] if row else None
 
+
 def get_columns(conn: sqlite3.Connection, table: str, schema: str = "main") -> list[str]:
     """Return ordered column names for schema.table."""
     cur = conn.execute(f'PRAGMA {schema}.table_info("{table}");')
     cols = [r[1] for r in cur.fetchall()]
     cur.close()
     return cols
+
 
 def ensure_cache_table_from_src(dest: sqlite3.Connection) -> None:
     """
@@ -63,6 +68,7 @@ def ensure_cache_table_from_src(dest: sqlite3.Connection) -> None:
     # Make idempotent on first creation
     create_sql = create_sql.replace("CREATE TABLE ", "CREATE TABLE IF NOT EXISTS ", 1)
     dest.execute(create_sql)
+
 
 def merge_one_source(dest: sqlite3.Connection, src_path: Path) -> int:
     """
@@ -123,26 +129,31 @@ def merge_one_source(dest: sqlite3.Connection, src_path: Path) -> int:
             dest.commit()
             dest.execute("DETACH DATABASE src;")
 
+
 # ---------- main ----------
 
-def main():
-    if not ROOT.exists():
-        print(f"Directory not found: {ROOT}", file=sys.stderr)
+def main(root, dest, excluded_names, remove_old_folders: bool = True):
+    root = Path(root)
+    excluded_names = set(excluded_names.split())
+    excluded_names.add(dest)
+    dest = root / dest
+    if not root.exists():
+        print(f"Directory not found: {root}", file=sys.stderr)
         sys.exit(1)
 
-    sources = list_source_dbs(ROOT)
+    sources = list_source_dbs(root, excluded_names)
     if not sources:
         print("No source .sqlite files found. Nothing to merge.")
         return
 
     print(f"Found {len(sources)} source DBs.")
-    print(f"Destination: {DEST}")
+    print(f"Destination: {dest}")
 
-    conn = sqlite3.connect(str(DEST))
+    conn = sqlite3.connect(str(dest))
     try:
         # Pragmas: make writes faster and reduce spurious FK/lock issues
-        conn.execute("PRAGMA busy_timeout=5000;")     # wait a bit if file is busy
-        conn.execute("PRAGMA journal_mode=DELETE;")   # simple journal is fine for one-writer
+        conn.execute("PRAGMA busy_timeout=5000;")  # wait a bit if file is busy
+        conn.execute("PRAGMA journal_mode=DELETE;")  # simple journal is fine for one-writer
         conn.execute("PRAGMA synchronous=OFF;")
         conn.execute("PRAGMA temp_store=MEMORY;")
         conn.execute("PRAGMA foreign_keys=OFF;")
@@ -152,9 +163,12 @@ def main():
             print(f"Merging: {src}")
             inserted = merge_one_source(conn, src)
             total += max(inserted, 0)
+            if remove_old_folders:
+                Path(src).unlink()
+                Path(src).parent.rmdir()
 
         print(f"Done. Rows inserted (best effort): {total}")
-        print(f"Combined DB at: {DEST}")
+        print(f"Combined DB at: {dest}")
 
         # Optional: compact the file
         # conn.execute("VACUUM;")
@@ -166,5 +180,10 @@ def main():
     finally:
         conn.close()
 
+
 if __name__ == "__main__":
-    main()
+    # ROOT = Path(".think2sql_cache").resolve()
+    # DEST = ROOT / "pred_cached_query.sqlite"
+    # EXCLUDE_NAMES = {"target_cached_query.sqlite", DEST.name}
+
+    fire.Fire(main)
