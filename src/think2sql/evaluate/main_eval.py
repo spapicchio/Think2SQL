@@ -56,10 +56,6 @@ class GenerationParams:
         default=42,
         metadata={"help": "Random seed for generation (sampling)."},
     )
-    truncate_prompt: bool = field(
-        default=True,
-        metadata={"help": "If True, truncates the prompt to fit the model’s context length."},
-    )
 
 
 @dataclass
@@ -111,7 +107,7 @@ def _get_system_prompt_from_jinja(eval_args: EvaluateArgs) -> str:
     system_prompt_jinja_file = Path(eval_args.prompt_folder) / eval_args.system_prompt_name
     if system_prompt_jinja_file.exists():
         return system_prompt_jinja_file.read_text()
-    return None
+    raise ValueError(f"System prompt Jinja file not found: {system_prompt_jinja_file}")
 
 
 def main(vllm_config, generation_params, evaluate_args):
@@ -127,7 +123,7 @@ def main(vllm_config, generation_params, evaluate_args):
         launcher_type=ParallelismManager.VLLM,
         custom_tasks_directory=custom_module_task,  # Set to path if using custom tasks
         # Remove the parameter below once your configuration is tested
-        max_samples=10
+        # max_samples=10
     )
 
     vllm_config.system_prompt_name = _get_system_prompt_from_jinja(eval_args=evaluate_args)

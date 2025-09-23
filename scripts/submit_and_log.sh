@@ -1,6 +1,5 @@
 #!/bin/bash
 set -e
-OMP_NUM_THREADS=16
 #BASE_WORK='/workspaces/Think2SQL'
 BASE_WORK='/home/papicchi/Think2SQL'
 

@@ -88,6 +88,7 @@ class Think2SQLTrainer:
                 "relative_base_path": self.script_args.relative_db_base_path,
             },
             num_proc=16,
+            load_from_cache_file=False,
         )
         tokenizer = get_tokenizer(self.model_args, self.training_args)
         model = get_model(self.model_args, self.training_args)

@@ -20,7 +20,7 @@ class EXPreparator(GenerativePreparator):
     def prepare(doc: Doc, model_response: ModelResponse, **kwargs):
         return {
             'golds': doc.get_golds()[0],
-            'preds': model_response.final_text if len(model_response.final_text) > 1 else model_response.final_text,
+            'preds': model_response.final_text if len(model_response.final_text) > 1 else model_response.final_text[0],
             'formatted_doc': doc,
         }
 
@@ -29,22 +29,23 @@ class CorpusLevelEX(CorpusLevelComputation):
     def __init__(self, evaluate_args: EvaluateArgs):
         setattr(evaluate_args, "reward_funcs", ["EX"])
         self.evaluate_args = evaluate_args
+        self.ex_fn = get_reward_funcs(script_args=self.evaluate_args)[0]
 
     def compute_corpus(self, items: list[dict]) -> float:
-        ex_fn = get_reward_funcs(script_args=self.evaluate_args)[0]
-
         golds = [item['golds'] for item in items]
         preds = [item['preds'] for item in items]
+
         db_ids = [item['formatted_doc'].specific["db_id"] for item in items]
-        rewards = ex_fn(completions=preds,
-                        target_sql=golds,
-                        db_id=db_ids)
+
+        rewards = self.ex_fn(completions=preds,
+                             target_sql=golds,
+                             db_id=db_ids)
         return mean(rewards)
 
 
 def extend_enum_metrics(evaluate_args: EvaluateArgs):
     execution_accuracy = CorpusLevelMetric(
-        metric_name='execution_accuracy@3',
+        metric_name='execution_accuracy',
         higher_is_better=True,
         sample_level_fn=EXPreparator(),
         category=SamplingMethod.GENERATIVE,

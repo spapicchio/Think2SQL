@@ -19,7 +19,7 @@ dependencies = [
     "hf-transfer>=0.1.9",
     "jinja2>=3.1.6",
     "loguru>=0.7.3",
-    "nl2sqlevaluator>=1.2.1",
+    "nl2sqlevaluator>=1.2.2",
     "python-dotenv>=1.1.1",
     "sentencepiece>=0.2.1",
     "setuptools>=80.9.0",
@@ -28,7 +28,6 @@ dependencies = [
     "lighteval>=0.10.0",
     "fire>=0.7.1",
     "deepspeed-kernels>=0.0.1.dev1698255861",
-    "sentence-transformers>=5.1.0",
     "matplotlib>=3.10.6",
 ]
 
