@@ -16,7 +16,7 @@ from NL2SQLEvaluator.orchestrator_state import AvailableMetrics, AvailableDialec
 from think2sql.configs import GRPOScriptArguments
 from think2sql.logger import get_logger
 from think2sql.utils.data import utils_get_engine
-from think2sql.utils.sql import get_sql_from_generation
+from think2sql.utils.sql import get_sql_from_generation, check_crud_sql
 
 # This is needed to have a different cache for each process
 # when using multiprocessing training
@@ -37,7 +37,8 @@ def _get_cache_pred_db_based_on_pid(
             relative_base_path=pred_sql_cache_db_path
         )
         target_cache_db = SqliteCacheDB.from_uri(
-            relative_base_path=target_sql_cache_db_path, cache_db=pred_cache_db
+            relative_base_path=target_sql_cache_db_path,
+            cache_db=pred_cache_db
         )
 
         cache_db_connections_path = pathlib.Path(cache_db_connections_path)
@@ -58,19 +59,6 @@ def _get_cache_pred_db_based_on_pid(
     return None
 
 
-def _check_crud_sql_(query):
-    if (
-            "INSERT" in str(query).upper()
-            or "UPDATE" in str(query).upper()
-            or "DELETE" in str(query).upper()
-            or "CREATE" in str(query).upper()
-            or "DROP" in str(query).upper()
-            or "ALTER" in str(query).upper()
-    ):
-        return "WRONG_QUERY"
-    return query
-
-
 def _parse_model_response(completion):
     if isinstance(completion, str):
         return completion
@@ -88,6 +76,7 @@ def ex_reward(
         cache_db_connections_path: str,
         target_sql_cache_db_path: str,
         pred_sql_cache_db_path: str,
+        save_in_cache: bool,
         *args,
         **kwargs,
 ) -> list[float]:
@@ -95,7 +84,7 @@ def ex_reward(
     assert len(target_sql) == len(completions)
     model_prediction = [_parse_model_response(completion) for completion in completions]
     predicted_sqls = [
-        _check_crud_sql_(get_sql_from_generation(pred)) for pred in model_prediction
+        check_crud_sql(get_sql_from_generation(pred)) for pred in model_prediction
     ]
     cache = _get_cache_pred_db_based_on_pid(
         os.getpid(),
@@ -115,6 +104,7 @@ def ex_reward(
         metrics_to_calculate=[
             AvailableMetrics.EXECUTION_ACCURACY.value,
         ],
+        save_executed_query_in_cache=save_in_cache,
     )
     results = evaluator_orchestrator.invoke(orchestrator_input)
     results = [result[AvailableMetrics.EXECUTION_ACCURACY.value] for result in results]
@@ -129,13 +119,14 @@ def qatch_reward(
         cache_db_connections_path: str,
         target_sql_cache_db_path: str,
         pred_sql_cache_db_path: str,
+        save_in_cache: bool,
         *args,
         **kwargs,
 ):
     assert len(target_sql) == len(completions)
     model_prediction = [_parse_model_response(completion) for completion in completions]
     predicted_sqls = [
-        _check_crud_sql_(get_sql_from_generation(pred)) for pred in model_prediction
+        check_crud_sql(get_sql_from_generation(pred)) for pred in model_prediction
     ]
     cache = _get_cache_pred_db_based_on_pid(
         os.getpid(),
@@ -157,6 +148,7 @@ def qatch_reward(
             AvailableMetrics.CELL_RECALL.value,
             AvailableMetrics.TUPLE_CARDINALITY.value,
         ],
+        save_executed_query_in_cache=save_in_cache,
     )
     results = evaluator_orchestrator.invoke(orchestrator_input)
     results = [mean(list(result.values())) for result in results]
@@ -196,7 +188,7 @@ def format_reward(completions, **kwargs):
     return [1.0 if match else 0.0 for match in matches]
 
 
-def get_reward_funcs(script_args: GRPOScriptArguments) -> list[Callable]:
+def get_reward_funcs(script_args: GRPOScriptArguments, save_in_cache=True) -> list[Callable]:
     logger = get_logger(__name__)
     execution_accuracy_fn = partial(
         ex_reward,
@@ -204,6 +196,7 @@ def get_reward_funcs(script_args: GRPOScriptArguments) -> list[Callable]:
         cache_db_connections_path=script_args.cache_db_connections_path,
         target_sql_cache_db_path=script_args.target_sql_cache_db_path,
         pred_sql_cache_db_path=script_args.pred_sql_cache_db_path,
+        save_in_cache=save_in_cache,
     )
     # This is to make sure the function name is correct in the logs and can be used with lighteval
     execution_accuracy_fn.__name__ = ex_reward.__name__
@@ -213,6 +206,7 @@ def get_reward_funcs(script_args: GRPOScriptArguments) -> list[Callable]:
         cache_db_connections_path=script_args.cache_db_connections_path,
         target_sql_cache_db_path=script_args.target_sql_cache_db_path,
         pred_sql_cache_db_path=script_args.pred_sql_cache_db_path,
+        save_in_cache=save_in_cache,
     )
     qatch_reward_fn.__name__ = qatch_reward.__name__
     # This is to make sure the function name is correct in the logs and can be used with lighteval

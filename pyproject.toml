@@ -7,33 +7,31 @@ authors = [
 ]
 description = "Official implementation of Think2SQL"
 # readme = "README.md"
-requires-python = ">=3.10,<3.13"  # vllm needs Python <3.13 with dev 
+requires-python = ">=3.12,<3.13"  # vllm needs Python <3.13 with dev
 dependencies = [
-    "deepspeed==0.16.8",
-    "transformers>=4.56.0",
-    "flash-attn>=2.7.4.post1,<2.8.0",
+    "deepspeed>=0.16.8",
+    "deepspeed-kernels>=0.0.1.dev1698255861",
+    "vllm>=0.10.0,<0.10.2",
+    "ray",
     "accelerate>=1.4.0",
+    "transformers>=4.56.0",
     "trl>=0.23.0",
-    "vllm==0.8.5.post1",
+    "more_itertools",
     "datasets>=4.0.0",
     "hf-transfer>=0.1.9",
     "jinja2>=3.1.6",
     "loguru>=0.7.3",
-    "nl2sqlevaluator>=1.2.2",
+    "nl2sqlevaluator>=1.2.4",
     "python-dotenv>=1.1.1",
     "sentencepiece>=0.2.1",
-    "setuptools>=80.9.0",
     "wandb>=0.21.3",
     "bitsandbytes>=0.47.0",
-    "lighteval>=0.10.0",
+    "lighteval[vllm]>=0.11.0",
     "fire>=0.7.1",
-    "deepspeed-kernels>=0.0.1.dev1698255861",
     "matplotlib>=3.10.6",
+    "emoji>=2.15.0",
 ]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
-
-[tool.uv.sources]
-lighteval = { git = "https://github.com/huggingface/lighteval.git", rev = "main" }

@@ -56,6 +56,11 @@ class SFTScriptArguments(trl.ScriptArguments):
         metadata={"help": "Dataset name. Can be omitted if using dataset_mixture."}
     )
 
+    target_sql_col_name: str = field(
+        default='SQL',
+        metadata={"help": "The target SQL column name in the dataset. Default to SQL as in the BIRD dataset."},
+    )
+
     relative_db_base_path: str = field(
         default="data/bird/train_databases",
         metadata={"help": "Relative path to the database files directory"}
@@ -264,6 +269,11 @@ class EvaluateArgs(SFTScriptArguments):
         metadata={
             "help": "Path to the cache database with the predicted queries. Can be different from the db of the target."},
     )
+
+    def __post_init__(self):
+        super().__post_init__()
+        if self.system_prompt_name.lower() in ('none', 'null', ''):
+            self.system_prompt_name = None
 
 
 @dataclass
