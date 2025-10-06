@@ -2,18 +2,23 @@ from typing import Protocol
 
 from datasets import Dataset
 
+from think2sql.configs import EvaluateArgs
+from think2sql.data_processor import build_messages
+from think2sql.data_processor.get_ddl import get_schema
+from think2sql.logger import get_logger
+
 logger = get_logger(__name__)
 
 
 class BuildMessages(Protocol):
     @staticmethod
-    def build(dataset: Dataset) -> Dataset:
+    def build(dataset: Dataset, evaluate_args: EvaluateArgs, *args, **kwargs) -> Dataset:
         ...
 
 
 class BuildMessagesBirdDev:
     @staticmethod
-    def build(dataset: Dataset) -> Dataset:
+    def build(dataset: Dataset, evaluate_args: EvaluateArgs, *args, **kwargs) -> Dataset:
         logger.info(f"Creating column `messages` in dataset with `BuildMessagesBirdDev`")
         logger.info("Inserting evidence and schema if not present in dataset")
         dataset = dataset.map(

@@ -4,14 +4,12 @@ from trl import TrlParser
 from vllm import SamplingParams
 
 from think2sql.configs import EvaluateArgs
-from think2sql.data_processor import build_messages
-from think2sql.data_processor.get_ddl import get_schema
 from think2sql.evaluate.configs import EvalVLLMConfig, EvalGenerationParams
-from think2sql.evaluate.data_readers import DataReader, HFDataReader, JsonDataReader
+from think2sql.evaluate.data_readers import DataReader, JsonDataReader
 from think2sql.evaluate.evaluators import Evaluator, SqliteEvaluatorEX
+from think2sql.evaluate.message_builders import BuildMessagesBirdDev
 from think2sql.evaluate.predictors import Predictor, VLLMPredictor
 from think2sql.evaluate.saver import DataframeSaver, JSONSaver
-from think2sql.evaluate.message_builders import BuildMessagesBirdDev
 from think2sql.logger import get_logger
 from think2sql.utils.sql import get_sql_from_generation, check_crud_sql
 
@@ -30,7 +28,7 @@ def main_eval(
 ):
     dataset = data_reader.read(evaluate_args.dataset_name)
 
-    dataset = messages_builder.build(dataset)
+    dataset = messages_builder.build(dataset, evaluate_args)
 
     # create Sampling Params
     sampling_params = SamplingParams(
