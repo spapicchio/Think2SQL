@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from trl import TrlParser
 from vllm import SamplingParams
@@ -7,7 +8,7 @@ from think2sql.configs import EvaluateArgs
 from think2sql.evaluate.configs import EvalVLLMConfig, EvalGenerationParams
 from think2sql.evaluate.data_readers import DataReader, JsonDataReader
 from think2sql.evaluate.evaluators import Evaluator, SqliteEvaluatorEX
-from think2sql.evaluate.message_builders import BuildMessagesBirdDev
+from think2sql.evaluate.message_builders import BuildMessagesBirdDev, BuildMessagesOmniSQLData
 from think2sql.evaluate.predictors import Predictor, VLLMPredictor
 from think2sql.evaluate.saver import DataframeSaver, JSONSaver
 from think2sql.logger import get_logger
@@ -68,10 +69,11 @@ def main_eval(
     df[model_name] = predictions
     df[f'SQL_{model_name}'] = [check_crud_sql(get_sql_from_generation(pred)) for pred in predictions]
     df[f'EX_{model_name}'] = results
+    dataset_name = "_".join(evaluate_args.dataset_name.split('/'))
     saver.save(
-        folder='./results',
-        file_name=f'eval_{vllm_config.model_name.replace("/", "_")}_{evaluate_args.dataset_name}',
-        df=dataset.to_pandas().assign(model_name=predictions, results=results)
+        folder=Path('./results') / dataset_name / model_name,
+        df=dataset.to_pandas().assign(model_name=predictions, results=results),
+        configs=(vllm_config, sampling_params, evaluate_args),
     )
 
 
@@ -81,7 +83,7 @@ if __name__ == "__main__":
     main_eval(
         vllm_config, generation_params, evaluate_args,
         JsonDataReader(),
-        BuildMessagesBirdDev(),
+        BuildMessagesOmniSQLData() if evaluate_args.dataset_name == 'data/omnisql/data/dev_bird.json' else BuildMessagesBirdDev(),
         VLLMPredictor(),
         SqliteEvaluatorEX(),
         JSONSaver()

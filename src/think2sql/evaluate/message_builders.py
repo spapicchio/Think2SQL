@@ -1,5 +1,6 @@
 from typing import Protocol
 
+import pandas as pd
 from datasets import Dataset
 
 from think2sql.configs import EvaluateArgs
@@ -44,3 +45,20 @@ class BuildMessagesBirdDev:
             load_from_cache_file=False
         )
         return dataset
+
+
+class BuildMessagesOmniSQLData:
+    @staticmethod
+    def build(dataset: Dataset,
+              evaluate_args: EvaluateArgs,
+              path_bird_dev='data/omnisql/data/bird/dev_20240627/dev.json',
+              *args, **kwargs) -> Dataset:
+        df = pd.read_json(path_bird_dev)
+        df_omnisql = dataset.to_pandas()
+        df_omnisql['db_id'] = df['db_id']
+        df_omnisql['SQL'] = df_omnisql['output_seq']
+        df_omnisql['messages'] = df_omnisql.apply(
+            lambda row: [{"role": "user", "content": row['input_seq']}],
+            axis=1
+        )
+        return Dataset.from_pandas(df_omnisql)
