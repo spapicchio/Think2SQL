@@ -1,35 +1,37 @@
 # PROMPT PARAMS
-user_prompt_name: 'base_think_user_prompt.jinja'
-system_prompt_name: 'base_think_system_prompt.jinja'
+user_prompt_name: 'omnisql_user_prompt.jinja'
+system_prompt_name: 'none'
+prompt_folder: 'prompts'
 
 # DATASET PARAMS
-dataset_name: 'simone-papicchio/bird'
+dataset_name: 'data/omnisql/data/bird/dev_20240627/dev.json'
+#dataset_name: 'data/omnisql/data/dev_bird.json'
 task_name: 'bird_dev'
 add_sample_rows_strategy: 'inline'
-relative_db_base_path: 'data/bird_dev/dev_databases'
+relative_db_base_path: 'data/omnisql/data/bird/dev_20240627/dev_databases'
 
 # VLLM PARAMS
-model_name: "simone-papicchio/Think2SQL-7B"
+#model_name: "simone-papicchio/Think2SQL-7B"
+model_name: "seeklhy/OmniSQL-7B"
 dtype: "bfloat16"
 tensor_parallel_size: 1
 data_parallel_size: 1
 pipeline_parallel_size: 1
-gpu_memory_utilization: 0.80
-max_model_length: 30_000
+gpu_memory_utilization: 0.90
+max_model_length: 8192
 seed: 42
 trust_remote_code: True
 override_chat_template: True
 
 # GENERATION PARAMS
 # https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct/blob/main/generation_config.json
-temperature: 0.7        # vendor default
-top_p: 0.8              # vendor default (add this; it’s in the model config)
-top_k: 20               # vendor default
-repetition_penalty: 1.1 # vendor default
+temperature: 0.0       # vendor default
+top_p: 1.0              # vendor default (add this; it’s in the model config)
+top_k: 0               # vendor default
+repetition_penalty: 1.0 # vendor default
 frequency_penalty: 0.0  # keep off unless you see looping
 presence_penalty: 0.0   # keep off to avoid perturbing variable names
-max_new_tokens: 8_000
-truncate_prompt: True
+max_new_tokens: 2048
 
 # METRICS PARAMS
 cache_db_connections_path: '.think2sql_eval_cache'

@@ -18,7 +18,7 @@ JOB_ID=${MY_SLURM_JOB_ID}
 echo JOB_ID = "$JOB_ID"
 
 # ----------- Configuration -----------
-export OMP_NUM_THREADS=100
+export OMP_NUM_THREADS=10
 export WANDB_DIR="${WORK}/wandb/${JOB_ID}/"
 export WANDB_ARTIFACT_DIR="${WORK}/wandb/${JOB_ID}/"
 export TOKENIZERS_PARALLELISM=True

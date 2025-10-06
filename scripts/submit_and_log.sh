@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
-#BASE_WORK='/workspaces/Think2SQL'
-BASE_WORK='/home/papicchi/Think2SQL'
+# Automatically determine BASE_WORK as the parent directory of this script
+BASE_WORK="$(dirname "$(dirname "$(realpath "$0")")")"
 
 # Check if job script is provided
 if [ -z "$1" ]; then

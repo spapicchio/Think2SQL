@@ -51,7 +51,7 @@ relative_db_base_path: 'data/bird/train_databases'
 #####################
 # TRAINING ARGUMENTS
 #####################
-resume_from_checkpoint: false
+resume_from_checkpoint: true
 bf16: true
 do_eval: false
 eval_strategy: "no"
