@@ -8,13 +8,19 @@ def build_messages(
         prompt_folder: str,
         assistant_response_col_name: str | None = None,
 ):
-    system_prompt = _render_prompt(system_prompt_name, prompt_folder, **row)
+    prompt = []
+    if system_prompt_name:
+        system_prompt = _render_prompt(system_prompt_name, prompt_folder, **row)
+        prompt.append(
+            {"role": "system", "content": system_prompt},
+        )
+
     user_prompt = _render_prompt(user_prompt_name, prompt_folder, **row)
 
-    prompt = [
-        {"role": "system", "content": system_prompt},
+    prompt.append(
         {"role": "user", "content": user_prompt},
-    ]
+    )
+
     if assistant_response_col_name:
         prompt.append(
             {"role": "assistant", "content": row[assistant_response_col_name]}
