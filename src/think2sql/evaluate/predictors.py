@@ -75,8 +75,13 @@ class VLLMPredictor:
             stop_token_ids = [2]
         elif "mixtral-" in self.model_name.lower():
             stop_token_ids = [2]
-        elif "omnisql-" in self.model_name.lower():
+        elif "omnisql-" in self.model_name.lower() or "arctic-" in self.model_name.lower():
             stop_token_ids = [151645]  # OmniSQL uses the same tokenizer as Qwen2.5
+        elif "sql-r1-" in self.model_name.lower():
+            stop_token_ids = [151645, 151643]
+        elif "qwen2.5-" in self.model_name.lower():
+            stop_token_ids = [151645, 151643]
         else:
             raise ValueError(f"stop_token_ids for model {self.model_name} is not defined.")
+
         return stop_token_ids

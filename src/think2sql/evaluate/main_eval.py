@@ -1,4 +1,5 @@
 import os
+from dataclasses import dataclass
 from pathlib import Path
 
 from trl import TrlParser
@@ -15,6 +16,14 @@ from think2sql.logger import get_logger
 from think2sql.utils.sql import get_sql_from_generation, check_crud_sql
 
 logger = get_logger(__name__)
+
+
+@dataclass
+class SummaryResults:
+    number_of_completions: int
+    model_name: str
+    dataset_name: str
+    ex: float
 
 
 def main_eval(
@@ -69,11 +78,17 @@ def main_eval(
     df[model_name] = predictions
     df[f'SQL_{model_name}'] = [check_crud_sql(get_sql_from_generation(pred)) for pred in predictions]
     df[f'EX_{model_name}'] = results
-    dataset_name = "_".join(evaluate_args.dataset_name.split('/'))
+    dataset_name = "_".join(evaluate_args.dataset_name.replace('.json', '').split('/'))
+    summary_results = SummaryResults(
+        number_of_completions=generation_params.number_of_completions,
+        model_name=model_name,
+        dataset_name=dataset_name,
+        ex=round(sum(results) / len(results), 4)
+    )
     saver.save(
         folder=Path('./results') / dataset_name / model_name,
         df=dataset.to_pandas().assign(model_name=predictions, results=results),
-        configs=(vllm_config, sampling_params, evaluate_args),
+        configs=(vllm_config, generation_params, sampling_params, evaluate_args, summary_results),
     )
 
 
@@ -83,7 +98,7 @@ if __name__ == "__main__":
     main_eval(
         vllm_config, generation_params, evaluate_args,
         JsonDataReader(),
-        BuildMessagesOmniSQLData() if evaluate_args.dataset_name == 'data/omnisql/data/dev_bird.json' else BuildMessagesBirdDev(),
+        BuildMessagesOmniSQLData() if evaluate_args.omnisql_file_db_id_json_path is not None else BuildMessagesBirdDev(),
         VLLMPredictor(),
         SqliteEvaluatorEX(),
         JSONSaver()
