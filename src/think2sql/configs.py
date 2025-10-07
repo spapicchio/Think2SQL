@@ -234,6 +234,11 @@ class EvaluateArgs(SFTScriptArguments):
         default='EX',
         metadata={"help": "The name of the evaluation task."},
     )
+    omnisql_file_db_id_json_path: Optional[str] = field(
+        default=None,
+        metadata={"help": "Path to the JSON file mapping database IDs to file paths for OmniSQL."},
+    )
+
     prompt_folder: str = field(
         default="prompts",
         metadata={"help": "The folder where the jinja prompts are stored."},
@@ -274,6 +279,8 @@ class EvaluateArgs(SFTScriptArguments):
         super().__post_init__()
         if self.system_prompt_name.lower() in ('none', 'null', ''):
             self.system_prompt_name = None
+        if self.omnisql_file_db_id_json_path.lower() in ('none', 'null', ''):
+            self.omnisql_file_db_id_json_path = None
 
 
 @dataclass

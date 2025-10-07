@@ -51,9 +51,9 @@ class BuildMessagesOmniSQLData:
     @staticmethod
     def build(dataset: Dataset,
               evaluate_args: EvaluateArgs,
-              path_bird_dev='data/omnisql/data/bird/dev_20240627/dev.json',
               *args, **kwargs) -> Dataset:
-        df = pd.read_json(path_bird_dev)
+        path_dev_db_id_json = evaluate_args.omnisql_file_db_id_json_path
+        df = pd.read_json(path_dev_db_id_json)
         df_omnisql = dataset.to_pandas()
         df_omnisql['db_id'] = df['db_id']
         df_omnisql['SQL'] = df_omnisql['output_seq']
