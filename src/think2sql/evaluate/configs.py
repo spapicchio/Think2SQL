@@ -80,3 +80,19 @@ class EvalVLLMConfig:
         default=True,
         metadata={"help": "Use the repo’s chat template override when available."},
     )
+    vllm_server_host: str = field(
+        default="localhost",
+        metadata={"help": "vLLM server host (if using vLLM server)."},
+    )
+    vllm_server_port: int = field(
+        default=8000,
+        metadata={"help": "vLLM server port (if using vLLM server)."},
+    )
+    litellm_provider: str | None = field(
+        default=None,
+        metadata={"help": "Optional provider for LiteLLM. If vllm online serving, use `hosted_vllm`"},
+    )
+
+    def __post_init__(self):
+        if self.litellm_provider.lower() in ['none', 'null', '']:
+            self.litellm_provider = None

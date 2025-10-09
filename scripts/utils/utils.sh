@@ -19,9 +19,28 @@ log_section() {
   echo "[$timestamp][$job_name] $msg"
 }
 
+# ----------- Launch VLLM  -----------
+launch_vllm() {
+  local devices="${1:-0}"           # default GPU(s)
+  local model_name="${2:?MODEL NAME REQUIRED}"
+  local host="${3:-127.0.0.1}"
+  local port="${4:-0}"              # 0 = auto-pick free port
+  local dps="${5:-1}"
+  local tps="${6:-1}"
+  local gpumemory="${7:-0.8}"
 
-
-
+  CUDA_VISIBLE_DEVICES=${devices} \
+  VLLM_WORKER_MULTIPROC_METHOD=spawn \
+  NCCL_P2P_LEVEL=NVL  \
+  PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
+  VLLM_LOGGING_LEVEL=WARNING \
+  vllm serve "${model_name}" \
+  --host "${host}" \
+  --port "${port}" \
+  --data-parallel-size "${dps}" \
+  --tensor-parallel-size "${tps}" \
+  --gpu-memory-utilization ${gpumemory} &
+}
 
 # kill vLLM on exit or error
 cleanup() {

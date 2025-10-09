@@ -1,5 +1,5 @@
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from pathlib import Path
 
 from trl import TrlParser
@@ -10,10 +10,10 @@ from think2sql.evaluate.configs import EvalVLLMConfig, EvalGenerationParams
 from think2sql.evaluate.data_readers import DataReader, JsonDataReader
 from think2sql.evaluate.evaluators import Evaluator, SqliteEvaluatorEX
 from think2sql.evaluate.message_builders import BuildMessagesBirdDev, BuildMessagesOmniSQLData
-from think2sql.evaluate.predictors import Predictor, VLLMPredictor
+from think2sql.evaluate.predictors import Predictor, VLLMPredictor, LiteLLMPredictor
 from think2sql.evaluate.saver import DataframeSaver, JSONSaver
 from think2sql.logger import get_logger
-from think2sql.utils.sql import get_sql_from_generation, check_crud_sql
+from think2sql.utils.sql import get_sql_from_generation
 
 logger = get_logger(__name__)
 
@@ -36,6 +36,10 @@ def main_eval(
         evaluator: Evaluator,
         saver: DataframeSaver,
 ):
+    logger.info(asdict(vllm_config))
+    logger.info(asdict(generation_params))
+    logger.info(asdict(evaluate_args))
+
     dataset = data_reader.read(evaluate_args.dataset_name)
 
     dataset = messages_builder.build(dataset, evaluate_args)
@@ -53,12 +57,9 @@ def main_eval(
 
     # run predictions
     predictions = predictor.infer(
-        model_name=vllm_config.model_name,
         messages=[line["messages"] for line in dataset],
         sampling_params=sampling_params,
-        tp=vllm_config.tensor_parallel_size,
-        dp=vllm_config.data_parallel_size,
-        max_model_len=vllm_config.max_model_length,
+        **asdict(vllm_config)
     )
 
     # run evaluations
@@ -76,17 +77,31 @@ def main_eval(
     df = dataset.to_pandas()
     model_name = vllm_config.model_name.replace("/", "_")
     df[model_name] = predictions
-    df[f'SQL_{model_name}'] = [check_crud_sql(get_sql_from_generation(pred)) for pred in predictions]
+    if generation_params.number_of_completions == 1:
+        predictions: list[str]
+        sql_prediction = [
+            get_sql_from_generation(get_sql_from_generation(pred))
+            for pred in predictions
+        ]
+    else:
+        sql_prediction = [
+            [get_sql_from_generation(get_sql_from_generation(pred)) for pred in preds]
+            for preds in predictions
+        ]
+    df[f'SQL_{model_name}'] = sql_prediction
     df[f'EX_{model_name}'] = results
     dataset_name = "_".join(evaluate_args.dataset_name.replace('.json', '').split('/'))
+    strategy = 'greedy' if generation_params.number_of_completions == 1 else 'majority_voting'
+
     summary_results = SummaryResults(
         number_of_completions=generation_params.number_of_completions,
         model_name=model_name,
         dataset_name=dataset_name,
         ex=round(sum(results) / len(results), 4)
     )
+    logger.warning(summary_results)
     saver.save(
-        folder=Path('./results') / dataset_name / model_name,
+        folder=Path('./results') / dataset_name / model_name / strategy,
         df=dataset.to_pandas().assign(model_name=predictions, results=results),
         configs=(vllm_config, generation_params, sampling_params, evaluate_args, summary_results),
     )
@@ -99,7 +114,7 @@ if __name__ == "__main__":
         vllm_config, generation_params, evaluate_args,
         JsonDataReader(),
         BuildMessagesOmniSQLData() if evaluate_args.omnisql_file_db_id_json_path is not None else BuildMessagesBirdDev(),
-        VLLMPredictor(),
+        VLLMPredictor() if vllm_config.litellm_provider is None else LiteLLMPredictor(),
         SqliteEvaluatorEX(),
         JSONSaver()
     )

@@ -4,15 +4,15 @@ system_prompt_name: 'none'
 prompt_folder: 'prompts'
 
 # DATASET PARAMS
-dataset_name: 'data/omnisql/data/bird/dev_20240627/dev.json'
-#dataset_name: 'data/omnisql/data/dev_bird.json'
+#dataset_name: 'data/omnisql/data/bird/dev_20240627/dev.json'
+dataset_name: 'data/omnisql/data/dev_bird.json'
 task_name: 'bird_dev'
 add_sample_rows_strategy: 'inline'
 relative_db_base_path: 'data/omnisql/data/bird/dev_20240627/dev_databases'
+omnisql_file_db_id_json_path: null
 
 # VLLM PARAMS
-#model_name: "simone-papicchio/Think2SQL-7B"
-model_name: "seeklhy/OmniSQL-7B"
+model_name: "MPX0222forHF/SQL-R1-B"
 dtype: "bfloat16"
 tensor_parallel_size: 1
 data_parallel_size: 1
@@ -22,6 +22,10 @@ max_model_length: 8192
 seed: 42
 trust_remote_code: True
 override_chat_template: True
+vllm_server_host: '127.0.0.1'
+vllm_server_port: 24879
+litellm_provider: null # Provider used with LiteLLM
+
 
 # GENERATION PARAMS
 # https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct/blob/main/generation_config.json
@@ -32,6 +36,7 @@ repetition_penalty: 1.0 # vendor default
 frequency_penalty: 0.0  # keep off unless you see looping
 presence_penalty: 0.0   # keep off to avoid perturbing variable names
 max_new_tokens: 2048
+number_of_completions: 1
 
 # METRICS PARAMS
 cache_db_connections_path: '.think2sql_eval_cache'
