@@ -107,11 +107,11 @@ class LiteLLMPredictor:
               model_name,
               messages: BatchChatMessagesHF | ChatMessageHF,
               sampling_params: SamplingParams,
-              provider: str,
+              litellm_provider: str,
               *args,
               **kwargs) -> list[list[str]] | list[str]:
         from litellm import batch_completion
-        logger.info(f"Inferring with LiteLLM. Provider: {provider}, Model: {model_name}")
+        logger.info(f"Inferring with LiteLLM. Provider: {litellm_provider}, Model: {model_name}")
 
         # litellm.batch_completion expects a list of requests;
         is_single = False
@@ -120,14 +120,14 @@ class LiteLLMPredictor:
             is_single = True
 
         api_base = None
-        if provider == 'hosted_vllm':
+        if litellm_provider == 'hosted_vllm':
             base_url = f"http://{kwargs.get('vllm_server_host', 'localhost')}:{kwargs.get('vllm_server_port', 8000)}"
             api_base = f"{base_url}/v1"
             logger.info(f'Using hosted_vllm with api_base: {api_base}')
             self.check_server(base_url, total_timeout=320, retry_interval=60)
 
         model_answer = batch_completion(
-            model=f"{provider}/{model_name}",
+            model=f"{litellm_provider}/{model_name}",
             messages=messages,
             temperature=sampling_params.temperature,
             max_tokens=sampling_params.max_tokens,
@@ -139,7 +139,11 @@ class LiteLLMPredictor:
             api_base=api_base,
             rpm=kwargs.get('rpm', None),
         )
-        model_answer = [[choice['message']['content'] for choice in out['choices']] for out in model_answer]
+        if sampling_params.n == 1:
+            model_answer = [out['choices'][0]['message']['content'] for out in model_answer]
+        else:
+            model_answer = [[choice['message']['content'] for choice in out['choices']] for out in model_answer]
+
         return model_answer if not is_single else model_answer[0]
 
     def check_server(self, base_url, total_timeout: float = 320, retry_interval: float = 60):
@@ -174,7 +178,7 @@ class LiteLLMPredictor:
 if __name__ == "__main__":
     predictor = LiteLLMPredictor()
     sampling_params = SamplingParams(
-        n=3,
+        n=1,
         temperature=1.0,
         max_tokens=200,
     )
@@ -185,8 +189,8 @@ if __name__ == "__main__":
     ]
 
     output = predictor.infer(
-        model_name='Qwen/Qwen2.5-1.5B-Instruct',
-        provider='hosted_vllm',
+        model_name='openai/gpt-oss-120b',
+        litellm_provider='together_ai',
         sampling_params=sampling_params,
         messages=messages,
         vllm_server_host='127.0.0.1',

@@ -77,17 +77,13 @@ def main_eval(
     df = dataset.to_pandas()
     model_name = vllm_config.model_name.replace("/", "_")
     df[model_name] = predictions
-    if generation_params.number_of_completions == 1:
-        predictions: list[str]
-        sql_prediction = [
-            get_sql_from_generation(get_sql_from_generation(pred))
-            for pred in predictions
-        ]
-    else:
-        sql_prediction = [
-            [get_sql_from_generation(get_sql_from_generation(pred)) for pred in preds]
-            for preds in predictions
-        ]
+
+    sql_prediction = [
+        get_sql_from_generation(get_sql_from_generation(pred)) if generation_params.number_of_completions == 1
+        else [get_sql_from_generation(get_sql_from_generation(p)) for p in pred]
+        for pred in predictions
+    ]
+
     df[f'SQL_{model_name}'] = sql_prediction
     df[f'EX_{model_name}'] = results
     dataset_name = "_".join(evaluate_args.dataset_name.replace('.json', '').split('/'))
