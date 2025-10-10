@@ -29,14 +29,14 @@ launch_vllm() {
   local tps="${6:-1}"
   local gpumemory="${7:-0.8}"
 
+  #PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
   CUDA_VISIBLE_DEVICES=${devices} \
   VLLM_WORKER_MULTIPROC_METHOD=spawn \
   NCCL_P2P_LEVEL=NVL  \
-  PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
-  VLLM_LOGGING_LEVEL=WARNING \
   vllm serve "${model_name}" \
   --host "${host}" \
   --port "${port}" \
+  --disable-uvicorn-access-log \
   --data-parallel-size "${dps}" \
   --tensor-parallel-size "${tps}" \
   --gpu-memory-utilization ${gpumemory} &
