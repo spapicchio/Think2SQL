@@ -170,7 +170,7 @@ def test_invalid_prediction_sql_is_ignored_as_empty(tmp_path, monkeypatch, monke
             conn.close()
 
     import think2sql.evaluate.evaluators as mod
-    monkeypatch.setattr(mod.SqliteEvaluatorEX, "_execute_sql_with_timeout", staticmethod(fake_exec))
+    monkeypatch.setattr(mod.SqliteEvaluatorEX, "_worker_execute_sql_tagged", staticmethod(fake_exec))
 
     evaluator = SqliteEvaluatorEX()
     res = evaluator.evaluate(
