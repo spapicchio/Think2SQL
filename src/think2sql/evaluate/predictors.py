@@ -14,6 +14,35 @@ load_dotenv()
 logger = get_logger(__name__)
 
 
+def check_server_availability(base_url, total_timeout: float = 320, retry_interval: float = 60):
+    """
+    Check server availability with retries on failure. This function is only used with hosted_vllm provider.
+    If the server is not up after the total timeout duration, raise a `ConnectionError`.
+    """
+    url = f"{base_url}/health/"
+    start_time = time.time()  # Record the start time
+
+    while True:
+        try:
+            response = requests.get(url)
+        except requests.exceptions.RequestException as exc:
+            # Check if the total timeout duration has passed
+            elapsed_time = time.time() - start_time
+            if elapsed_time >= total_timeout:
+                raise ConnectionError(
+                    f"The vLLM server can't be reached at {base_url} after {total_timeout} seconds. Make "
+                    "sure the server is running by running `vllm serve`."
+                ) from exc
+        else:
+            if response.status_code == 200:
+                logger.info(f"Server is up at `{url}`!")
+                return None
+
+        # Retry logic: wait before trying again
+        logger.info(f"Server is not up yet at `{url}`. Retrying in {retry_interval} seconds...")
+        time.sleep(retry_interval)
+
+
 # ---- Types ----
 class ChatTurn(TypedDict):
     role: Literal["system", "user", "assistant", "tool", "function"]  # trim if your models need fewer
@@ -53,9 +82,13 @@ class VLLMPredictor:
         llm = self._load_model(tp, dp, max_model_len)
         tokenizer = self._load_tokenizer()
         # reasoning effort: https://huggingface.co/docs/trl/main/dataset_formats#harmony
-        if 'gpt-oss' in self.model_name:
-            chat_prompts = tokenizer.apply_chat_template(messages, add_generation_prompt=True, tokenize=False,
-                                                         reasoning_effort=ReasoningEffort.HIGH)
+        if 'gpt' in self.model_name:
+            chat_prompts = tokenizer.apply_chat_template(
+                messages,
+                add_generation_prompt=True,
+                tokenize=False,
+                reasoning_effort=ReasoningEffort.HIGH
+            )
         else:
             chat_prompts = tokenizer.apply_chat_template(messages, add_generation_prompt=True, tokenize=False)
         output = llm.generate(chat_prompts, sampling_params)
@@ -124,7 +157,7 @@ class LiteLLMPredictor:
             base_url = f"http://{kwargs.get('vllm_server_host', 'localhost')}:{kwargs.get('vllm_server_port', 8000)}"
             api_base = f"{base_url}/v1"
             logger.info(f'Using hosted_vllm with api_base: {api_base}')
-            self.check_server(base_url, total_timeout=320, retry_interval=60)
+            check_server_availability(base_url, total_timeout=500, retry_interval=60)
 
         model_answer = batch_completion(
             model=f"{litellm_provider}/{model_name}",
@@ -138,49 +171,34 @@ class LiteLLMPredictor:
             frequency_penalty=sampling_params.frequency_penalty,
             api_base=api_base,
             rpm=kwargs.get('rpm', None),
+            drop_params=True,
+            reasoning_effort='high' if 'gpt' in model_name.lower() else None,
         )
-        if sampling_params.n == 1:
-            model_answer = [out['choices'][0]['message']['content'] for out in model_answer]
-        else:
-            model_answer = [[choice['message']['content'] for choice in out['choices']] for out in model_answer]
 
-        return model_answer if not is_single else model_answer[0]
+        parsed_responses = self.parse_model_output(model_answer)
+        return parsed_responses if not is_single else parsed_responses[0]
 
-    def check_server(self, base_url, total_timeout: float = 320, retry_interval: float = 60):
-        """
-        Check server availability with retries on failure. This function is only used with hosted_vllm provider.
-        If the server is not up after the total timeout duration, raise a `ConnectionError`.
-        """
-        url = f"{base_url}/health/"
-        start_time = time.time()  # Record the start time
+    def parse_model_output(self, model_answer: list) -> list[list[str] | str]:
+        parsed_response = []
+        for out in model_answer:
+            choices_response = []
+            for choice in out['choices']:
+                message = choice['message']['content']
+                if 'reasoning_content' in choice['message']:
+                    message = choice['message']['reasoning_content'] + "\n" + message
+                choices_response.append(message)
+            parsed_response.append(choices_response)
 
-        while True:
-            try:
-                response = requests.get(url)
-            except requests.exceptions.RequestException as exc:
-                # Check if the total timeout duration has passed
-                elapsed_time = time.time() - start_time
-                if elapsed_time >= total_timeout:
-                    raise ConnectionError(
-                        f"The vLLM server can't be reached at {base_url} after {total_timeout} seconds. Make "
-                        "sure the server is running by running `vllm serve`."
-                    ) from exc
-            else:
-                if response.status_code == 200:
-                    logger.info(f"Server is up at `{url}`!")
-                    return None
-
-            # Retry logic: wait before trying again
-            logger.info(f"Server is not up yet at `{url}`. Retrying in {retry_interval} seconds...")
-            time.sleep(retry_interval)
+        parsed_response = [response if len(response) > 1 else response[0] for response in parsed_response]
+        return parsed_response
 
 
 if __name__ == "__main__":
     predictor = LiteLLMPredictor()
     sampling_params = SamplingParams(
-        n=1,
+        n=3,
         temperature=1.0,
-        max_tokens=200,
+        max_tokens=2000,
     )
     messages: BatchChatMessagesHF = [
         [{"role": "user", "content": "Write a Python function to add two numbers."}],
@@ -189,8 +207,8 @@ if __name__ == "__main__":
     ]
 
     output = predictor.infer(
-        model_name='openai/gpt-oss-120b',
-        litellm_provider='together_ai',
+        model_name='gpt-5-mini-2025-08-07',
+        litellm_provider='openai',
         sampling_params=sampling_params,
         messages=messages,
         vllm_server_host='127.0.0.1',
