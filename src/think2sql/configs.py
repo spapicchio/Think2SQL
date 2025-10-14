@@ -275,6 +275,11 @@ class EvaluateArgs(SFTScriptArguments):
             "help": "Path to the cache database with the predicted queries. Can be different from the db of the target."},
     )
 
+    num_of_experiments: int = field(
+        default=3,
+        metadata={"help": "Number of experiments for calculating standard deviation."},
+    )
+
     def __post_init__(self):
         super().__post_init__()
         if self.system_prompt_name.lower() in ('none', 'null', ''):
