@@ -1,4 +1,5 @@
 import os
+import statistics
 from dataclasses import dataclass, asdict
 from pathlib import Path
 
@@ -24,6 +25,7 @@ class SummaryResults:
     model_name: str
     dataset_name: str
     ex: float
+    std: float
 
 
 def main_eval(
@@ -54,46 +56,51 @@ def main_eval(
         max_tokens=generation_params.max_new_tokens,
     )
     logger.info(f"Sampling Params: {sampling_params}")
-
-    # run predictions
-    predictions = predictor.infer(
-        messages=[line["messages"] for line in dataset],
-        sampling_params=sampling_params,
-        **asdict(vllm_config)
-    )
-
-    # run evaluations
-    results = evaluator.evaluate(
-        target_queries=[line[evaluate_args.target_sql_col_name] for line in dataset],
-        llm_predictions=predictions,
-        db_files=[
-            os.path.join(evaluate_args.relative_db_base_path, line["db_id"], f"{line['db_id']}.sqlite")
-            for line in dataset
-        ],
-        relative_db_base_path=evaluate_args.relative_db_base_path,
-    )
-
-    logger.info(f"EX: {sum(results) / len(results): .4f}")
-    df = dataset.to_pandas()
     model_name = vllm_config.model_name.replace("/", "_")
-    df[model_name] = predictions
-
-    sql_prediction = [
-        get_sql_from_generation(get_sql_from_generation(pred)) if generation_params.number_of_completions == 1
-        else [get_sql_from_generation(get_sql_from_generation(p)) for p in pred]
-        for pred in predictions
-    ]
-
-    df[f'SQL_{model_name}'] = sql_prediction
-    df[f'EX_{model_name}'] = results
     dataset_name = "_".join(evaluate_args.dataset_name.replace('.json', '').split('/'))
     strategy = 'greedy' if generation_params.number_of_completions == 1 else 'majority_voting'
+    ex_n = []
+    num_experiments = evaluate_args.num_of_experiments if generation_params.temperature > 0 else 1
+    logger.info(f'Running {num_experiments} experiments to calculate standard deviation.')
+    for n in range(num_experiments):
+        predictions = predictor.infer(
+            messages=[line["messages"] for line in dataset],
+            sampling_params=sampling_params,
+            **asdict(vllm_config)
+        )
+
+        # run evaluations
+        results = evaluator.evaluate(
+            target_queries=[line[evaluate_args.target_sql_col_name] for line in dataset],
+            llm_predictions=predictions,
+            db_files=[
+                os.path.join(evaluate_args.relative_db_base_path, line["db_id"], f"{line['db_id']}.sqlite")
+                for line in dataset
+            ],
+            relative_db_base_path=evaluate_args.relative_db_base_path,
+        )
+
+        logger.info(f"EX {n}: {sum(results) / len(results): .4f}")
+        df = dataset.to_pandas()
+
+        df[model_name] = predictions
+
+        sql_prediction = [
+            get_sql_from_generation(get_sql_from_generation(pred)) if generation_params.number_of_completions == 1
+            else [get_sql_from_generation(get_sql_from_generation(p)) for p in pred]
+            for pred in predictions
+        ]
+
+        df[f'SQL_{model_name}_{n}'] = sql_prediction
+        df[f'EX_{model_name}_{n}'] = results
+        ex_n.append(sum(results) / len(results))
 
     summary_results = SummaryResults(
         number_of_completions=generation_params.number_of_completions,
         model_name=model_name,
         dataset_name=dataset_name,
-        ex=round(sum(results) / len(results), 4)
+        ex=round(statistics.mean(ex_n), 3) * 100,
+        std=round(statistics.stdev(ex_n), 3) * 100 if len(ex_n) > 1 else 0.0,
     )
     logger.warning(summary_results)
     saver.save(
