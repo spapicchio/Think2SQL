@@ -1,7 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=eval-GPT
-
-# https://platform.openai.com/docs/guides/latest-model
+#SBATCH --job-name=eval-Llama405
 
 # --- robust shell settings ---
 set -Eeuo pipefail
@@ -11,16 +9,16 @@ source "${WORK}/.env"
 source "${WORK}/scripts/utils/utils.sh"
 
 
-MODEL_NAME='gpt-5-mini-2025-08-07'
-#MODEL_NAME='gpt-4o-mini-2024-07-18'
+#MODEL_NAME='deepseek-ai/DeepSeek-R1'
+MODEL_NAME='meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo'
 
-# GPT5-mini
-MAX_NEW_TOKENS=30000
-MAX_MOD_LENGTH=32768
+# deepseek
+#MAX_NEW_TOKENS=30000
+#MAX_MOD_LENGTH=32768
 
-# GPT4o-mini
-#MAX_NEW_TOKENS=2048
-#MAX_MOD_LENGTH=8192
+# Llama 405
+MAX_NEW_TOKENS=2048
+MAX_MOD_LENGTH=8192
 
 # ----------- Configuration -----------
 export OMP_NUM_THREADS=10
@@ -28,7 +26,7 @@ export OMP_NUM_THREADS=10
 # label, dataset, db_path, id_json (4 fields per tuple)
 datasets=(
 #  "SPIDER-dev"        "data/omnisql/data/dev_spider.json"                 "data/omnisql/data/spider/database"                         "data/omnisql/data/spider/dev.json"
-  "SPIDER-test"       "data/omnisql/data/test_spider.json"                "data/omnisql/data/spider/test_database"                         "data/omnisql/data/spider/test.json"
+  "SPIDER-test"       "data/omnisql/data/test_spider.json"                "data/omnisql/data/spider/test_database"                     "data/omnisql/data/spider/test.json"
   "Bird-dev"          "data/omnisql/data/dev_bird.json"                   "data/omnisql/data/bird/dev_20240627/dev_databases"         "data/omnisql/data/bird/dev_20240627/dev.json"
   "SPIDER-DK"         "data/omnisql/data/dev_spider_dk.json"              "data/omnisql/data/Spider-DK/database"                      "data/omnisql/data/Spider-DK/Spider-DK.json"
   "SPIDER-SYN"        "data/omnisql/data/dev_spider_syn.json"             "data/omnisql/data/spider/database"                         "data/omnisql/data/Spider-Syn/dev.json"
@@ -61,7 +59,7 @@ run_suite() {
     --repetition_penalty "${repetition_penalty}"
     --max_new_tokens "${MAX_NEW_TOKENS}"
     --max_model_length "${MAX_MOD_LENGTH}"
-    --litellm_provider "openai"
+    --litellm_provider "together_ai"
     --num_of_experiments 1
   )
 
@@ -95,25 +93,24 @@ run_suite $MODEL_NAME $TEMP $TOP_P $TOP_K $REP_PENALTY $NUM_SAMPLES
 
 ## majority Voting
 TEMP=1.0
-TOP_P=1.0
+TOP_P=0.95
 TOP_K=0
 REP_PENALTY=1.05
 NUM_SAMPLES=8
 run_suite $MODEL_NAME $TEMP $TOP_P $TOP_K $REP_PENALTY $NUM_SAMPLES
 
+# LLama405
+TEMP=0.0
+TOP_P=1
+TOP_K=0
+REP_PENALTY=1.0
+NUM_SAMPLES=1
+run_suite $MODEL_NAME $TEMP $TOP_P $TOP_K $REP_PENALTY $NUM_SAMPLES
 
-# GPT 4o-mini
-#TEMP=0
-#TOP_P=1.0
-#TOP_K=0
-#REP_PENALTY=1.0
-#NUM_SAMPLES=1
-#run_suite $MODEL_NAME $TEMP $TOP_P $TOP_K $REP_PENALTY $NUM_SAMPLES
-#
-### majority Voting
-#TEMP=1.0
-#TOP_P=1.0
-#TOP_K=0
-#REP_PENALTY=1.00
-#NUM_SAMPLES=8
-#run_suite $MODEL_NAME $TEMP $TOP_P $TOP_K $REP_PENALTY $NUM_SAMPLES
+## majority Voting
+TEMP=1.0
+TOP_P=1
+TOP_K=0
+REP_PENALTY=1.0
+NUM_SAMPLES=8
+run_suite $MODEL_NAME $TEMP $TOP_P $TOP_K $REP_PENALTY $NUM_SAMPLES
