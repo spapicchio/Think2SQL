@@ -28,18 +28,29 @@ launch_vllm() {
   local dps="${5:-1}"
   local tps="${6:-1}"
   local gpumemory="${7:-0.8}"
+  local max_model_length="${8:-2048}"
 
   #PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
+  local launcher=(
+    vllm serve "${model_name}"
+    --host "${host}"
+    --port "${port}"
+    --disable-uvicorn-access-log
+    --data-parallel-size "${dps}"
+    --tensor-parallel-size "${tps}"
+    --gpu-memory-utilization ${gpumemory}
+    --dtype "bfloat16"
+    --swap-space 42
+    --disable-custom-all-reduce
+    --max-model-len "${max_model_length}"
+    --max-num-seqs 120
+    --max-num-batched-tokens 240000
+  )
+
   CUDA_VISIBLE_DEVICES=${devices} \
   VLLM_WORKER_MULTIPROC_METHOD=spawn \
   NCCL_P2P_LEVEL=NVL  \
-  vllm serve "${model_name}" \
-  --host "${host}" \
-  --port "${port}" \
-  --disable-uvicorn-access-log \
-  --data-parallel-size "${dps}" \
-  --tensor-parallel-size "${tps}" \
-  --gpu-memory-utilization ${gpumemory} &
+  "${launcher[@]}" &
 }
 
 # kill vLLM on exit or error
