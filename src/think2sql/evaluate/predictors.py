@@ -1,9 +1,12 @@
 import time
+from collections import defaultdict
 from typing import Protocol, Literal
 from typing import TypedDict
 
 import requests
 from dotenv import load_dotenv
+from litellm.litellm_core_utils.streaming_handler import CustomStreamWrapper
+from litellm.types.utils import ModelResponse
 from openai_harmony import ReasoningEffort
 from transformers import AutoTokenizer
 from vllm import SamplingParams, LLM
@@ -132,8 +135,6 @@ class VLLMPredictor:
                 return ids
         raise ValueError(f"stop_token_ids for model {self.model_name} is not defined.")
 
-        return stop_token_ids
-
 
 class LiteLLMPredictor:
     def infer(self,
@@ -143,7 +144,10 @@ class LiteLLMPredictor:
               litellm_provider: str,
               *args,
               **kwargs) -> list[list[str]] | list[str]:
-        from litellm import batch_completion
+        import litellm
+        # litellm._turn_on_debug()
+        litellm.request_timeout = 6000  # increase request timeout to 6000 seconds
+
         logger.info(f"Inferring with LiteLLM. Provider: {litellm_provider}, Model: {model_name}")
 
         # litellm.batch_completion expects a list of requests;
@@ -159,11 +163,12 @@ class LiteLLMPredictor:
             logger.info(f'Using hosted_vllm with api_base: {api_base}')
             check_server_availability(base_url, total_timeout=500, retry_interval=60)
 
-        model_answer = batch_completion(
+        # stream=True makes each item in the returned list a streaming iterator
+        model_answer = litellm.batch_completion(
             model=f"{litellm_provider}/{model_name}",
             messages=messages,
             temperature=sampling_params.temperature,
-            max_tokens=sampling_params.max_tokens,
+            max_tokens=sampling_params.max_tokens if 'gpt' not in model_name.lower() else None,
             top_p=sampling_params.top_p,
             n=sampling_params.n,
             max_completion_tokens=sampling_params.max_tokens,
@@ -173,24 +178,47 @@ class LiteLLMPredictor:
             rpm=kwargs.get('rpm', None),
             drop_params=True,
             reasoning_effort='high' if 'gpt' in model_name.lower() else None,
+            max_workers=50,
+            stream=True if sampling_params.n > 1 or sampling_params.max_tokens > 15000 else False,
         )
 
         parsed_responses = self.parse_model_output(model_answer)
         return parsed_responses if not is_single else parsed_responses[0]
 
-    def parse_model_output(self, model_answer: list) -> list[list[str] | str]:
-        parsed_response = []
+    def parse_model_output(
+            self, model_answer: list[ModelResponse | CustomStreamWrapper]
+    ) -> list[list[str] | str]:
+
+        parsed_response: list[list[str]] = []
         for out in model_answer:
-            choices_response = []
-            for choice in out['choices']:
-                message = choice['message']['content']
-                if 'reasoning_content' in choice['message']:
-                    message = choice['message']['reasoning_content'] + "\n" + message
-                choices_response.append(message)
+            if isinstance(out, CustomStreamWrapper):
+                choices_response = self._parse_single_stream_response(out)
+            else:
+                if not isinstance(out, ModelResponse):
+                    if isinstance(out, BaseException):
+                        raise out
+                    ValueError(f'The output is not of type ModelResponse but type {type(out)}: {out}')
+
+                choices_response = [choice['message']['content'] for choice in out['choices']]
+
             parsed_response.append(choices_response)
 
-        parsed_response = [response if len(response) > 1 else response[0] for response in parsed_response]
+        parsed_response = [
+            response if len(response) > 1 else response[0]
+            for response in parsed_response
+        ]
+
         return parsed_response
+
+    def _parse_single_stream_response(self, stream_model_response: CustomStreamWrapper) -> list[str]:
+        buckets = defaultdict(list)
+        # stream contains N different streams one for each decoding strategy N requested
+        for chunk in stream_model_response:
+            for choice in chunk.choices:
+                buckets[choice.index].append(choice.delta.content or "")
+        # combine all chunks for the different choices
+        choices = ["".join(choice) for choice in buckets.values()]
+        return choices
 
 
 if __name__ == "__main__":
@@ -207,12 +235,12 @@ if __name__ == "__main__":
     ]
 
     output = predictor.infer(
-        model_name='gpt-5-mini-2025-08-07',
-        litellm_provider='openai',
+        model_name='Qwen/Qwen3-1.7B',
+        litellm_provider='hosted_vllm',
         sampling_params=sampling_params,
         messages=messages,
-        vllm_server_host='127.0.0.1',
-        vllm_server_port=24879
+        vllm_server_host='0.0.0.0',
+        vllm_server_port=8000
     )
 
     print(output)
