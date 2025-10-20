@@ -6,6 +6,7 @@ import pytest
 
 from think2sql.evaluate.evaluators import SqliteEvaluatorEX
 
+
 # --- Helpers -----------------------------------------------------------------
 
 def create_sqlite_db(tmp_path: Path, name: str, rows):
@@ -94,6 +95,7 @@ def test_majority_differs_from_gt_returns_0(tmp_path, monkeypatch_sql_sanitizers
     )
     assert res == [0]
 
+
 def test_execution_acc_single_pred(tmp_path, monkeypatch_sql_sanitizers):
     db = create_sqlite_db(tmp_path, "db_bad", rows=[(1, "a"), (2, "b"), (3, "c")])
 
@@ -108,6 +110,7 @@ def test_execution_acc_single_pred(tmp_path, monkeypatch_sql_sanitizers):
         timeout=5
     )
     assert res == [0]
+
 
 def test_execution_acc_single_pred(tmp_path, monkeypatch_sql_sanitizers):
     db = create_sqlite_db(tmp_path, "db_bad", rows=[(1, "a"), (2, "b"), (3, "c")])
@@ -154,23 +157,12 @@ def test_invalid_prediction_sql_is_ignored_as_empty(tmp_path, monkeypatch, monke
     gt = "SELECT id, val FROM t ORDER BY id;"
     preds = [
         "SELECT id, val FROM t ORDER BY id;",  # valid
-        "THIS IS NOT SQL",  # will be forced to raise by monkeypatch
+        "SELECT * FROM non_existing_table;",  # invalid
+        "SELECT * FROM non_existing_table;",  # invalid
+        "SELECT * FROM non_existing_table;",  # invalid
+        "SELECT * FROM non_existing_table;",  # invalid
         "SELECT id, val FROM t ORDER BY id;"  # valid
     ]
-
-    def fake_exec(db_file, sql_query, timeout):
-        if "NOT SQL" in sql_query:
-            raise RuntimeError("boom")
-        # execute real for others
-        conn = sqlite3.connect(db_file)
-        try:
-            cur = conn.execute(sql_query)
-            return cur.fetchall()
-        finally:
-            conn.close()
-
-    import think2sql.evaluate.evaluators as mod
-    monkeypatch.setattr(mod.SqliteEvaluatorEX, "_worker_execute_sql_tagged", staticmethod(fake_exec))
 
     evaluator = SqliteEvaluatorEX()
     res = evaluator.evaluate(
@@ -195,23 +187,29 @@ def test_timeout_predictions_count_as_empty(tmp_path, monkeypatch, monkeypatch_s
 
     preds = [
         "SELECT id, val FROM t ORDER BY id;",  # ok
-        "TIMEOUT_TAG",  # simulate timeout
-        "SELECT id, val FROM t ORDER BY id;"  # ok
+        "SELECT id, val FROM t ORDER BY id;",
+        """WITH RECURSIVE cnt(n) AS (SELECT 1
+                                     UNION ALL
+                                     SELECT n + 1
+                                     FROM cnt
+                                     WHERE n < 1000000000)
+           SELECT SUM(n)
+           FROM cnt""",
+        """WITH RECURSIVE cnt(n) AS (SELECT 1
+                                     UNION ALL
+                                     SELECT n + 1
+                                     FROM cnt
+                                     WHERE n < 1000000000)
+           SELECT SUM(n)
+           FROM cnt""",
+        """WITH RECURSIVE cnt(n) AS (SELECT 1
+                                     UNION ALL
+                                     SELECT n + 1
+                                     FROM cnt
+                                     WHERE n < 1000000000)
+           SELECT SUM(n)
+           FROM cnt""",
     ]
-
-    def fake_exec(db_file, sql_query, timeout):
-        if sql_query == "TIMEOUT_TAG":
-            # Mimic timeout behavior by returning [] as in the class
-            return []
-        conn = sqlite3.connect(db_file)
-        try:
-            cur = conn.execute(sql_query)
-            return cur.fetchall()
-        finally:
-            conn.close()
-
-    import think2sql.evaluate.evaluators as mod
-    monkeypatch.setattr(mod.SqliteEvaluatorEX, "_execute_sql_with_timeout", staticmethod(fake_exec))
 
     evaluator = SqliteEvaluatorEX()
     res = evaluator.evaluate(
@@ -219,7 +217,7 @@ def test_timeout_predictions_count_as_empty(tmp_path, monkeypatch, monkeypatch_s
         llm_predictions=[preds],
         db_files=[db],
         num_cpus=2,
-        timeout=1
+        timeout=2
     )
     assert res == [1]
 
