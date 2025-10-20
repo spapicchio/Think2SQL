@@ -43,7 +43,6 @@ def main_eval(
     logger.info(asdict(evaluate_args))
 
     dataset = data_reader.read(evaluate_args.dataset_name)
-
     dataset = messages_builder.build(dataset, evaluate_args)
 
     # create Sampling Params
@@ -59,53 +58,64 @@ def main_eval(
     model_name = vllm_config.model_name.replace("/", "_")
     dataset_name = "_".join(evaluate_args.dataset_name.replace('.json', '').split('/'))
     strategy = 'greedy' if generation_params.number_of_completions == 1 else 'majority_voting'
-    ex_n = []
+
     num_experiments = evaluate_args.num_of_experiments if generation_params.temperature > 0 else 1
     logger.info(f'Running {num_experiments} experiments to calculate standard deviation.')
-    for n in range(num_experiments):
-        predictions = predictor.infer(
-            messages=[line["messages"] for line in dataset],
-            sampling_params=sampling_params,
-            **asdict(vllm_config)
-        )
-
-        # run evaluations
-        results = evaluator.evaluate(
-            target_queries=[line[evaluate_args.target_sql_col_name] for line in dataset],
-            llm_predictions=predictions,
-            db_files=[
-                os.path.join(evaluate_args.relative_db_base_path, line["db_id"], f"{line['db_id']}.sqlite")
+    messages = [line["messages"] for line in dataset] * num_experiments
+    target_queries = [line[evaluate_args.target_sql_col_name] for line in dataset] * num_experiments
+    db_files = [os.path.join(evaluate_args.relative_db_base_path, line["db_id"], f"{line['db_id']}.sqlite")
                 for line in dataset
-            ],
-            relative_db_base_path=evaluate_args.relative_db_base_path,
-        )
+                ] * num_experiments
+    logger.info(f"Total number of messages: {len(messages)}: {len(dataset)} * {num_experiments}")
+    predictions = predictor.infer(
+        messages=messages,
+        sampling_params=sampling_params,
+        max_model_len=vllm_config.max_model_length,
+        tp=vllm_config.tensor_parallel_size,
+        dp=vllm_config.data_parallel_size,
+        **asdict(vllm_config)
+    )
 
-        logger.info(f"EX {n}: {sum(results) / len(results): .4f}")
-        df = dataset.to_pandas()
+    # run evaluations
+    results = evaluator.evaluate(
+        target_queries=target_queries,
+        llm_predictions=predictions,
+        db_files=db_files,
+        relative_db_base_path=evaluate_args.relative_db_base_path,
+    )
 
-        df[model_name] = predictions
+    df = dataset.to_pandas()
 
+    ex_n = []
+    for i in range(num_experiments):
+        start = i * len(dataset)
+        end = start + len(dataset)
+        n_pred = predictions[start:end]
+        n_results = results[start:end]
+        df[f'{model_name}_{i}'] = n_pred
         sql_prediction = [
             get_sql_from_generation(get_sql_from_generation(pred)) if generation_params.number_of_completions == 1
             else [get_sql_from_generation(get_sql_from_generation(p)) for p in pred]
-            for pred in predictions
+            for pred in n_pred
         ]
+        ex_n.append(statistics.mean(n_results))
 
-        df[f'SQL_{model_name}_{n}'] = sql_prediction
-        df[f'EX_{model_name}_{n}'] = results
-        ex_n.append(sum(results) / len(results))
+        df[f'SQL_{model_name}_{i}'] = sql_prediction
+        df[f'EX_{model_name}_{i}'] = n_results
 
+    mean_ex = statistics.mean(ex_n) * 100
+    std_ex = (statistics.stdev(ex_n) * 100) if len(ex_n) > 1 else 0.0
     summary_results = SummaryResults(
         number_of_completions=generation_params.number_of_completions,
         model_name=model_name,
         dataset_name=dataset_name,
-        ex=round(statistics.mean(ex_n), 3) * 100,
-        std=round(statistics.stdev(ex_n), 3) * 100 if len(ex_n) > 1 else 0.0,
+        ex=round(mean_ex, 3),
+        std=round(std_ex, 3),
     )
     logger.warning(summary_results)
     saver.save(
         folder=Path('./results') / dataset_name / model_name / strategy,
-        df=dataset.to_pandas().assign(model_name=predictions, results=results),
+        df=df,
         configs=(vllm_config, generation_params, sampling_params, evaluate_args, summary_results),
     )
 

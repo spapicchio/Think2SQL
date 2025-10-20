@@ -94,5 +94,5 @@ class EvalVLLMConfig:
     )
 
     def __post_init__(self):
-        if self.litellm_provider.lower() in ['none', 'null', '']:
+        if self.litellm_provider is not None and self.litellm_provider.lower() in ['none', 'null', '']:
             self.litellm_provider = None

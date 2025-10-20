@@ -103,6 +103,7 @@ class VLLMPredictor:
         return tokenizer
 
     def _load_model(self, tp, dp, max_model_len):
+        # https://docs.vllm.ai/en/latest/configuration/optimization.html#performance-tuning-with-chunked-prefill
         llm = LLM(
             model=self.model_name,
             dtype="bfloat16",
@@ -110,10 +111,10 @@ class VLLMPredictor:
             max_model_len=max_model_len,
             gpu_memory_utilization=0.92,
             swap_space=42,
-            enforce_eager=False,
-            disable_custom_all_reduce=True,
+            # disable_custom_all_reduce=True,
             trust_remote_code=True,
             data_parallel_size=dp,
+            max_num_batched_tokens=16000,
         )
         return llm
 
@@ -178,8 +179,8 @@ class LiteLLMPredictor:
             rpm=kwargs.get('rpm', None),
             drop_params=True,
             reasoning_effort='high' if 'gpt' in model_name.lower() else None,
-            max_workers=50,
-            stream=True if sampling_params.n > 1 or sampling_params.max_tokens > 15000 else False,
+            max_workers=8,
+            # stream=True if sampling_params.n > 1 or sampling_params.max_tokens > 15000 else False,
         )
 
         parsed_responses = self.parse_model_output(model_answer)
