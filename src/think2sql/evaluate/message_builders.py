@@ -25,7 +25,8 @@ class BuildMessagesBirdDev:
         dataset = dataset.map(
             lambda line: {
                 'evidence': line.get("evidence", ""),
-                "schema": line.get("schema", get_schema(line, 'inline', evaluate_args.relative_db_base_path)["schema"])
+                # "schema": line.get("schema", get_schema(line, 'inline', evaluate_args.relative_db_base_path)["schema"])
+                "schema": line["schema"]
             },
             num_proc=64,
             load_from_cache_file=False

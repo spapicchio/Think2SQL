@@ -1,22 +1,18 @@
 import os
-import pathlib
 import re
 import threading
 from functools import partial
-from statistics import mean
 from typing import Callable
 
-from NL2SQLEvaluator.db_executor.sqlite_executor import SqliteCacheDB
-from NL2SQLEvaluator.metric_executor.evaluator_orchestrator import OrchestratorInput
-from NL2SQLEvaluator.metric_executor.evaluator_orchestrator import (
-    evaluator_orchestrator,
-)
-from NL2SQLEvaluator.orchestrator_state import AvailableMetrics, AvailableDialect
+from NL2SQLEvaluator.db_executor_nodes import SQLiteDBExecutor, SqliteCache
+from NL2SQLEvaluator.db_executor_nodes.cache.cache_protocol import OutputTable
+from NL2SQLEvaluator.db_executor_nodes.db_executor_protocol import ExecuteTask, extract_sql_or_same
+from NL2SQLEvaluator.evaluator_nodes import BirdEXEvaluator
+from NL2SQLEvaluator.evaluator_nodes.evaluator_protocol import EvaluateTask, EvaluatorProtocol
+from NL2SQLEvaluator.evaluator_nodes.qatch_metrics import QATCHEvaluator
 
 from think2sql.configs import GRPOScriptArguments
 from think2sql.logger import get_logger
-from think2sql.utils.data import utils_get_engine
-from think2sql.utils.sql import get_sql_from_generation, check_crud_sql
 
 # This is needed to have a different cache for each process
 # when using multiprocessing training
@@ -24,135 +20,50 @@ REGISTRY_REWARD_CACHE = {}
 _lock = threading.Lock()
 
 
-def _get_cache_pred_db_based_on_pid(
-        pid,
-        cache_db_connections_path,
-        target_sql_cache_db_path,
-        pred_sql_cache_db_path=None,
-) -> SqliteCacheDB | None:
-    # the registry is needed for the multiprocessing training
-    if cache_db_connections_path is not None:
-        # first check if SQL in target cache_db, then in pred
-        pred_cache_db = SqliteCacheDB.from_uri(
-            relative_base_path=pred_sql_cache_db_path
-        )
-        target_cache_db = SqliteCacheDB.from_uri(
-            relative_base_path=target_sql_cache_db_path,
-            cache_db=pred_cache_db
-        )
-
-        cache_db_connections_path = pathlib.Path(cache_db_connections_path)
-        new_db_path = cache_db_connections_path / str(pid) / f"cache_pred_{pid}.sqlite"
-        new_db_path.parent.mkdir(mode=0o777, parents=True, exist_ok=True)
-        # create file
-        if not new_db_path.exists():
-            new_db_path.touch(mode=0o777)
-        path = str(new_db_path)
-
-        with _lock:
-            if pid not in REGISTRY_REWARD_CACHE:
-                REGISTRY_REWARD_CACHE[pid] = SqliteCacheDB.from_uri(
-                    relative_base_path=path,
-                    cache_db=target_cache_db if target_sql_cache_db_path else None,
-                )
-        return REGISTRY_REWARD_CACHE[pid]
-    return None
-
-
-def _parse_model_response(completion):
+def _parse_model_response(completion) -> str | list[str]:
     if isinstance(completion, str):
         return completion
     elif "content" in completion[0]:
-        return completion[0]["content"]
+        pred = [val['content'] for val in completion]
+        return pred if len(pred) > 1 else pred[0]
     else:
         return completion
 
 
-def ex_reward(
-        completions: list[dict | str | list],
-        target_sql: list[str],
-        db_id: list[str],
-        relative_db_base_path: str,
-        cache_db_connections_path: str,
-        target_sql_cache_db_path: str,
-        pred_sql_cache_db_path: str,
-        save_in_cache: bool,
-        *args,
-        **kwargs,
-) -> list[float]:
-    # completion is STR when used in CorpusLevelMetric from lighteval
-    assert len(target_sql) == len(completions)
-    model_prediction = [_parse_model_response(completion) for completion in completions]
-    predicted_sqls = [
-        check_crud_sql(get_sql_from_generation(pred)) for pred in model_prediction
-    ]
-    cache = _get_cache_pred_db_based_on_pid(
-        os.getpid(),
-        cache_db_connections_path,
-        target_sql_cache_db_path,
-        pred_sql_cache_db_path,
-    )
-    orchestrator_input = OrchestratorInput(
-        target_queries=target_sql,
-        predicted_queries=predicted_sqls,
-        executor=[
-            utils_get_engine(
-                relative_db_base_path, AvailableDialect("sqlite"), id_, cache
-            )
-            for id_ in db_id
-        ],
-        metrics_to_calculate=[
-            AvailableMetrics.EXECUTION_ACCURACY.value,
-        ],
-        save_executed_query_in_cache=save_in_cache,
-    )
-    results = evaluator_orchestrator.invoke(orchestrator_input)
-    results = [result[AvailableMetrics.EXECUTION_ACCURACY.value] for result in results]
-    return results
-
-
-def qatch_reward(
+def nl2sql_reward(
         completions: list[dict],
         target_sql: list[str],
         db_id: list[str],
+        evaluator: EvaluatorProtocol,
         relative_db_base_path: str,
-        cache_db_connections_path: str,
-        target_sql_cache_db_path: str,
-        pred_sql_cache_db_path: str,
-        save_in_cache: bool,
         *args,
         **kwargs,
-):
-    assert len(target_sql) == len(completions)
-    model_prediction = [_parse_model_response(completion) for completion in completions]
-    predicted_sqls = [
-        check_crud_sql(get_sql_from_generation(pred)) for pred in model_prediction
+) -> list[float]:
+    # run in parallel predictions and targets
+    model_predictions = [_parse_model_response(completion) for completion in completions]
+    target_sql_results, model_predictions_results = _execute_target_and_pred_sql(
+        db_id,
+        target_sql,
+        model_predictions,
+        relative_db_base_path
+    )
+    # make evaluation
+    tasks = [
+        EvaluateTask(
+            predictions=[pred for pred in preds if isinstance(pred, OutputTable)],
+            target=[tar for tar in tars if isinstance(tar, OutputTable)]  # assuming all targets are correct
+        )
+        for tars, preds in zip(target_sql_results, model_predictions_results)
     ]
-    cache = _get_cache_pred_db_based_on_pid(
-        os.getpid(),
-        cache_db_connections_path,
-        target_sql_cache_db_path,
-        pred_sql_cache_db_path,
+
+    scores = evaluator.execute_metric(
+        tasks=tasks,
+        metric='cp_cr_tc',
+        *args,
+        **kwargs
     )
-    orchestrator_input = OrchestratorInput(
-        target_queries=target_sql,
-        predicted_queries=predicted_sqls,
-        executor=[
-            utils_get_engine(
-                relative_db_base_path, AvailableDialect("sqlite"), id_, cache
-            )
-            for id_ in db_id
-        ],
-        metrics_to_calculate=[
-            AvailableMetrics.CELL_PRECISION.value,
-            AvailableMetrics.CELL_RECALL.value,
-            AvailableMetrics.TUPLE_CARDINALITY.value,
-        ],
-        save_executed_query_in_cache=save_in_cache,
-    )
-    results = evaluator_orchestrator.invoke(orchestrator_input)
-    results = [mean(list(result.values())) for result in results]
-    return results
+
+    return scores
 
 
 def tag_count_reward(completions, **kwargs) -> list[float]:
@@ -188,27 +99,45 @@ def format_reward(completions, **kwargs):
     return [1.0 if match else 0.0 for match in matches]
 
 
+def _execute_target_and_pred_sql(db_ids: list[str],
+                                 target_sqls: list[str],
+                                 pred_sqls: list[str],
+                                 relative_db_base_path: str):
+    db_files = [os.path.join(relative_db_base_path, id_, f"{id_}.sqlite") for id_ in db_ids] * 2
+    query_to_execute = target_sqls + pred_sqls
+
+    tasks = [
+        ExecuteTask(db_files=db_file, queries=[extract_sql_or_same(query)])
+        for db_file, query in zip(db_files, query_to_execute)
+    ]
+    executed_queries = SQLiteDBExecutor().execute_queries(
+        tasks=tasks,
+        timeout=500,
+        cache_db=SqliteCache(),
+        cache_db_file='.nl2sql_cache/train_omnisql_cache.sqlite'
+    )
+
+    target_sql_results = executed_queries[: len(target_sqls)]
+    model_predictions_results = executed_queries[len(target_sqls):]
+    return target_sql_results, model_predictions_results
+
+
 def get_reward_funcs(script_args: GRPOScriptArguments, save_in_cache=True) -> list[Callable]:
     logger = get_logger(__name__)
     execution_accuracy_fn = partial(
-        ex_reward,
+        nl2sql_reward,
         relative_db_base_path=script_args.relative_db_base_path,
-        cache_db_connections_path=script_args.cache_db_connections_path,
-        target_sql_cache_db_path=script_args.target_sql_cache_db_path,
-        pred_sql_cache_db_path=script_args.pred_sql_cache_db_path,
-        save_in_cache=save_in_cache,
+        evaluator=BirdEXEvaluator()
     )
     # This is to make sure the function name is correct in the logs and can be used with lighteval
-    execution_accuracy_fn.__name__ = ex_reward.__name__
+    execution_accuracy_fn.__name__ = 'execution_accuracy'
     qatch_reward_fn = partial(
-        qatch_reward,
+        nl2sql_reward,
         relative_db_base_path=script_args.relative_db_base_path,
-        cache_db_connections_path=script_args.cache_db_connections_path,
-        target_sql_cache_db_path=script_args.target_sql_cache_db_path,
-        pred_sql_cache_db_path=script_args.pred_sql_cache_db_path,
-        save_in_cache=save_in_cache,
+        evaluator=QATCHEvaluator(),
+        metric='cp_cr_tc',
     )
-    qatch_reward_fn.__name__ = qatch_reward.__name__
+    qatch_reward_fn.__name__ = 'qatch_reward'
     # This is to make sure the function name is correct in the logs and can be used with lighteval
 
     REWARD_FUNCS_REGISTRY = {
@@ -221,17 +150,3 @@ def get_reward_funcs(script_args: GRPOScriptArguments, save_in_cache=True) -> li
     reward_funcs = [REWARD_FUNCS_REGISTRY[func] for func in script_args.reward_funcs]
     logger.info(f"loaded reward functions: {script_args.reward_funcs}")
     return reward_funcs
-
-
-if __name__ == "__main__":
-    cache_db = _get_cache_pred_db_based_on_pid(
-        pid=183742,
-        cache_db_connections_path=".think2sql_cache",
-        target_sql_cache_db_path=".think2sql_cache/target_cached_query.sqlite",
-        pred_sql_cache_db_path=".think2sql_cache/pred_cached_query.sqlite",
-    )
-    cache_db.insert_in_cache(
-        db_id="table_a",
-        query="SELECT * FROM table_a WHERE column_b = 'value1'",
-        result=[('value1', 'value2'), ('value3', 'value4')],
-    )
