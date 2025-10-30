@@ -1,6 +1,6 @@
 #!/bin/bash
 
-LOGFILE="${WORK}/log_sbatch.log"
+LOGFILE="${BASE_WORK}/log_sbatch.log"
 
 echo 'loading utils.sh'
 
@@ -142,7 +142,6 @@ function job_requeue {
 trap job_requeue USR1
 
 function setup_idris {
-  nvidia-smi
   # Set the HF home to the shared directory
   export HF_HOME="$ALL_CCFRWORK/hf_cache"
   # Set some env variable for running on compute nodes without internet access
@@ -157,13 +156,11 @@ function setup_idris {
   export MASTER_PORT=6000
 
   # setup one node for vLLM
-  NUM_NODES=$SLURM_NNODES
-  GPUS_PER_NODE=$SLURM_GPUS_PER_NODE
-  WORLD_SIZE=$((NUM_NODES * GPUS_PER_NODE))
-  export TRAIN_NODES=("${NODELIST[@]:0:$((NUM_NODES - 1))}")
+  WORLD_SIZE=$(($SLURM_NNODES * SLURM_GPUS_PER_NODE))
+  export TRAIN_NODES=("${NODELIST[@]:0:$((SLURM_NNODES - 1))}")  # Last node used for vLLM
   export TRAIN_NODES_STR=$(NODES="${TRAIN_NODES[*]}" python -c 'import os; print(",".join(os.getenv("NODES").split()))')
 
   export VLLM_NODE=${NODELIST[-1]} # Last node
-  export WORLD_SIZE=$((WORLD_SIZE - GPUS_PER_NODE))
-  export NUM_NODES=$((NUM_NODES - 1))
+  export WORLD_SIZE=$((WORLD_SIZE - SLURM_GPUS_PER_NODE)) # exclude vLLM node
+  export NUM_NODES=$((SLURM_NNODES - 1)) # exclude vLLM node
 }

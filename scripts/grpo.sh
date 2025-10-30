@@ -18,11 +18,12 @@ source "${BASE_WORK}/scripts/utils/utils.sh"
 
 # If one job crash and you want to start from it again,
 # set the JOB_ID to the one you want to resume from
-JOB_ID='qwen-think4-d2e7aafc'
-export WANDB_RUN_ID='5wxzzpvx'
+# JOB_ID='qwen-think4-d2e7aafc'
+# export WANDB_RUN_ID='5wxzzpvx'
 
-#JOB_ID=${MY_SLURM_JOB_ID}
-log_section "JOB_ID = ${JOB_ID}" "${JOB_NAME}"
+JOB_ID=${MY_SLURM_JOB_ID}
+
+log_section "JOB_ID = ${JOB_ID}" "${JOB_ID}"
 
 # ----------- Configuration -----------
 export OMP_NUM_THREADS=50
@@ -49,7 +50,8 @@ NUM_EPOCHS=2
 BS=8
 ACCUMULATION_STEPS=8
 MAX_PROMPT_LENGTH=6000
-MAX_LENGTH=8192
+MAX_LENGTH=4096
+MAX_MODEL_LENGTH=$((MAX_PROMPT_LENGTH + MAX_LENGTH + 1024))
 
 TOTAL_BATCH_SIZE=$((BS * ACCUMULATION_STEPS * NUM_GPUS))
 NUM_GENERATIONS=8
@@ -59,7 +61,8 @@ echo "NUM_GENERATIONS: ${NUM_GENERATIONS}"
 RL_MODEL_NAME="bs${TOTAL_BATCH_SIZE}_ml${MAX_LENGTH}_gen${NUM_GENERATIONS}_${JOB_ID}_RL"
 echo "RL_MODEL_NAME: ${RL_MODEL_NAME}"
 
-MODEL_BASE='Qwen3-4B-Thinking-2507'
+# MODEL_BASE='Qwen3-4B-Thinking-2507'
+MODEL_BASE='Qwen3-4B-Instruct-2507'
 MODEL_BASE_PATH="Qwen/${MODEL_BASE}"
 
 OUTPUT_DIR="${BASE_WORK}/model_trained/grpo/${MODEL_BASE}/${LOSS_TYPE}/${RL_MODEL_NAME}"
@@ -73,24 +76,7 @@ echo "SERVER_HOST: ${VLLM_SERVER_HOST}"
 echo "SERVER_PORT: ${VLLM_SERVER_PORT}"
 
 # https://huggingface.co/docs/trl/main/en/vllm_integration
-launch_trl_vllm ${DEVICE_VLLM} $MODEL_BASE_PATH false "$VLLM_SERVER_HOST" "$VLLM_SERVER_PORT" "${NUM_GPU_RESERVED_VLLM}" 15000
-#CUDA_VISIBLE_DEVICES=${DEVICE_VLLM} \
-#VLLM_WORKER_MULTIPROC_METHOD=spawn \
-#NCCL_P2P_LEVEL=NVL \
-#PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
-#python -m trl.scripts.vllm_serve \
-#--model "$MODEL_BASE_PATH" \
-#--host "$VLLM_SERVER_HOST" \
-#--port "$VLLM_SERVER_PORT" \
-#--data-parallel-size "${NUM_GPU_RESERVED_VLLM}" \
-#--gpu-memory-utilization 0.85 \
-#--log_level 'warning' \
-#--max_model_len 15000 &
-#
-#VLLM_PID=$!
-#VLLM_PGID=$(ps -o pgid= "$VLLM_PID" | tr -d ' ')
-#echo "vLLM PID: $VLLM_PID (PGID: $VLLM_PGID)"
-
+launch_trl_vllm ${DEVICE_VLLM} $MODEL_BASE_PATH false "$VLLM_SERVER_HOST" "$VLLM_SERVER_PORT" "${NUM_GPU_RESERVED_VLLM}" $MAX_MODEL_LENGTH
 
 LAUNCHER=(
         accelerate launch
@@ -126,7 +112,8 @@ LAUNCHER=(
         --save_total_limit 1
         --ddp_timeout=7200  # https://github.com/huggingface/open-r1/issues/160
 )
-log_section "Script: ${LAUNCHER[*]}" "${JOB_NAME}"
+
+log_section "Script: ${LAUNCHER[*]}" "${JOB_ID}"
 
 
 #TORCH_NCCL_ASYNC_ERROR_HANDLING=1 \

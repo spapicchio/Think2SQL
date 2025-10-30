@@ -2,28 +2,31 @@
 # --- robust shell settings ---
 set -Eeuo pipefail
 
-source "${BASE_WORK}/scripts/utils/utils.sh"
-
 # Check if job script is provided
 if [ -z "$1" ]; then
   echo "Usage: $0 path_to_script"
   exit 1
 fi
 
-if [ -z "$WORK" ]; then
-  echo "WORK variable is not set. Assuming running from ${BASE_WORK}."
-  export BASE_WORK="$(dirname "$(dirname "$(realpath "$0")")")"
-
+if [[ -z "${WORK:-}" ]]; then
+  # Determine script path robustly (works when sourced or executed)
+  SCRIPT_PATH="${BASH_SOURCE[0]:-$0}"
+  SCRIPT_REALPATH="$(realpath "$SCRIPT_PATH" 2>/dev/null || echo "$SCRIPT_PATH")"
+  export BASE_WORK="$(dirname "$(dirname "$SCRIPT_REALPATH")")"
+  echo "WORK variable is not set. Using BASE_WORK=${BASE_WORK}."
 else
   export BASE_WORK="${WORK}/Think2SQL"
 fi
+
+
+source "${BASE_WORK}/scripts/utils/utils.sh"
 
 JOB_SCRIPT="$1"
 JOB_NAME=$(awk -F= '/^#SBATCH[[:space:]]+--job-name=/ {print $2; exit}' "$JOB_SCRIPT")
 
 # copy and then launch the file
 # Generate a fake job ID based on the current timestamp and a hash
-if [[ -z "$SLURM_JOB_ID" ]]; then
+if [[ -z "${SLURM_JOB_ID:-}" ]]; then
   FAKE_JOB_ID=$(date +%s | sha256sum | head -c 8)
   echo "Generated fake job ID for date $(date +%s): $FAKE_JOB_ID"
 else
@@ -45,9 +48,10 @@ cp "$JOB_SCRIPT" "$FAKE_JOB_PATH"
 chmod 770 "$FAKE_JOB_PATH"
 
 # Submit the job
-if [ -z "$2" ]; then
+LOG_FOLDER="${BASE_WORK}/tmux_log/${DATE_DIR}"
+if [ -z "${2:-}" ]; then
   echo 'NOT sending with sbatch'
-  LOG_FOLDER="${BASE_WORK}/tmux_log/${DATE_DIR}/${TIME_TAG}-${MY_SLURM_JOB_ID}"
+  LOG_FOLDER = "${LOG_FOLDER}/${TIME_TAG}-${MY_SLURM_JOB_ID}"
   mkdir -p "${LOG_FOLDER}"
   tmux new-session -d -s "${MY_SLURM_JOB_ID}" \
     "BASE_WORK=${BASE_WORK} \
@@ -58,10 +62,12 @@ if [ -z "$2" ]; then
     stdbuf -oL tee >(stdbuf -oL grep 'WARNING' >> ${LOG_FOLDER}/warning.log) | \
     stdbuf -oL tee >(stdbuf -oL grep 'ERROR' >> ${LOG_FOLDER}/error.log)"
 else
-  JOB_OUTPUT=$(sbatch --output "${BASE_WORK}/tmux_log/${DATE_DIR}/${TIME_TAG}-%x-%j.out" "${FAKE_JOB_PATH}")
+  JOB_OUTPUT=$(sbatch "${FAKE_JOB_PATH}")
   MY_SLURM_JOB_ID=$(echo "$JOB_OUTPUT" | awk '{print $4}')
 
-  LOG_FOLDER="${BASE_WORK}/tmux_log/${DATE_DIR}/${TIME_TAG}-${JOB_NAME}-${MY_SLURM_JOB_ID}"
+  LOG_FOLDER="${LOG_FOLDER}/${TIME_TAG}-${JOB_NAME}-${MY_SLURM_JOB_ID}"
+  SLURM_LOG="./logs/rl/${JOB_NAME}-${MY_SLURM_JOB_ID}.out"
+  ln -s "$SLURM_LOG" "${LOG_FOLDER}/all.out"
 
   NEW_PATH="${DEST_DIR}/${TIME_TAG}-${JOB_NAME}-${MY_SLURM_JOB_ID}.sh"
   mv "$FAKE_JOB_PATH" NEW_PATH
