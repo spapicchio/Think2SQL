@@ -12,12 +12,11 @@ if [[ -z "${WORK:-}" ]]; then
   # Determine script path robustly (works when sourced or executed)
   SCRIPT_PATH="${BASH_SOURCE[0]:-$0}"
   SCRIPT_REALPATH="$(realpath "$SCRIPT_PATH" 2>/dev/null || echo "$SCRIPT_PATH")"
-  export BASE_WORK="$(dirname "$(dirname "$SCRIPT_REALPATH")")"
+  BASE_WORK="$(dirname "$(dirname "$SCRIPT_REALPATH")")"
   echo "WORK variable is not set. Using BASE_WORK=${BASE_WORK}."
 else
-  export BASE_WORK="${WORK}/Think2SQL"
+  BASE_WORK="${WORK}/Think2SQL"
 fi
-
 
 source "${BASE_WORK}/scripts/utils/utils.sh"
 
@@ -62,7 +61,11 @@ if [ -z "${2:-}" ]; then
     stdbuf -oL tee >(stdbuf -oL grep 'WARNING' >> ${LOG_FOLDER}/warning.log) | \
     stdbuf -oL tee >(stdbuf -oL grep 'ERROR' >> ${LOG_FOLDER}/error.log)"
 else
-  JOB_OUTPUT=$(sbatch "${FAKE_JOB_PATH}")
+  JOB_OUTPUT=$(
+    sbatch \
+      --export=ALL,JOB_ID=$JOB_ID,BASE_WORK=$BASE_WORK \
+      "${FAKE_JOB_PATH}"
+  )
   MY_SLURM_JOB_ID=$(echo "$JOB_OUTPUT" | awk '{print $4}')
 
   LOG_FOLDER="${LOG_FOLDER}/${TIME_TAG}-${JOB_NAME}-${MY_SLURM_JOB_ID}"

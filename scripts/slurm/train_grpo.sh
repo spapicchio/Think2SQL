@@ -1,13 +1,13 @@
 #!/bin/bash
-#SBATCH -A vno@h100
-#SBATCH -C h100
+#SBATCH -A vno@a100
+#SBATCH -C a100
 #SBATCH --job-name=rl-exp-30
 #SBATCH --ntasks-per-node=1
-#SBATCH --gpus-per-node=4
+#SBATCH --gpus-per-node=8
 #SBATCH --output=./logs/rl/%x-%j.out
-#SBATCH --nodes=2
-#SBATCH --qos=qos_gpu_h100-t3
-#SBATCH --time=20:00:00
+#SBATCH --nodes=1
+#SBATCH --qos=qos_gpu_a100-dev
+#SBATCH --time=00:30:00
 #SBATCH --cpus-per-task=100
 #SBATCH --signal=B:USR1@30
 #SBATCH --open-mode=append
@@ -20,9 +20,11 @@ module load cuda/12.4.1
 
 nvidia-smi
 
+source "${BASE_WORK}/scripts/utils.sh"
 source "${BASE_WORK}/.venv/bin/activate"
 source "${BASE_WORK}/.env"
-source "${BASE_WORK}/scripts/utils.sh"
+
+log_section "Environment and modules loaded with BASE_WORK=${BASE_WORK}" "${SLURM_JOB_ID}"
 
 DEVICE_TRL='0,1,2,3'
 NUM_GPUS=4
@@ -139,7 +141,7 @@ log_section "Script: ${LAUNCHER[*]}" "${JOB_ID}"
 srun \
 --wait=60 \
 --kill-on-bad-exit=1 \
---export=ALL,PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True,TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD=1,NCCL_P2P_LEVEL=NVL,CUDA_VISIBLE_DEVICES="${DEVICE_TRL}"  \
+--export=ALL,PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True,TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD=1,NCCL_P2P_LEVEL=NVL,CUDA_VISIBLE_DEVICES=${DEVICE_TRL}  \
 "${LAUNCHER[@]}"
 
 # The chat template needs to be specified only for DeepSeek models
