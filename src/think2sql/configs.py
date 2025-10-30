@@ -282,9 +282,10 @@ class EvaluateArgs(SFTScriptArguments):
 
     def __post_init__(self):
         super().__post_init__()
-        if self.system_prompt_name.lower() in ('none', 'null', ''):
+        if self.system_prompt_name is not None and self.system_prompt_name.lower() in ('none', 'null', ''):
             self.system_prompt_name = None
-        if self.omnisql_file_db_id_json_path.lower() in ('none', 'null', ''):
+        if self.omnisql_file_db_id_json_path is not None and self.omnisql_file_db_id_json_path.lower() in ('none',
+                                                                                                           'null', ''):
             self.omnisql_file_db_id_json_path = None
 
 

@@ -1,6 +1,7 @@
 import os
 
 import datasets
+import pandas as pd
 import transformers
 from transformers import set_seed
 from transformers.trainer_utils import get_last_checkpoint
@@ -8,7 +9,7 @@ from trl import get_peft_config, ModelConfig, GRPOTrainer
 
 from think2sql.configs import GRPOScriptArguments, GRPOConfig
 from think2sql.data_processor import build_messages
-from think2sql.data_processor.get_ddl import get_schema
+# from think2sql.data_processor.get_ddl import get_schema
 from think2sql.grpo.rewards import get_reward_funcs
 from think2sql.logger import get_logger
 from think2sql.utils.callbacks import get_callbacks
@@ -64,6 +65,12 @@ class Think2SQLTrainer:
                 "to continue training. If you want to start from scratch, please delete the directory "
                 f"{training_args.output_dir} and pass --overwrite_output_dir to train a new model."
             )
+        elif training_args.resume_from_checkpoint is not None and self.last_checkpoint is None:
+            logger.info(
+                f"No checkpoint found in {training_args.output_dir}, starting training from scratch."
+            )
+            training_args.resume_from_checkpoint = False
+
         ###############
         # Set wandb if present
         ###############
@@ -81,15 +88,13 @@ class Think2SQLTrainer:
     def train(self):
         dataset = get_dataset(self.script_args)
         dataset = dataset[self.script_args.dataset_train_split]
-        dataset = dataset.map(
-            get_schema,
-            fn_kwargs={
-                "add_sample_rows_strategy": self.script_args.add_sample_rows_strategy,
-                "relative_base_path": self.script_args.relative_db_base_path,
-            },
-            num_proc=16,
-            load_from_cache_file=False,
+        wrong_queries = pd.read_json('train_wrong_queries.json').SQL.values
+        initial_len = len(dataset)
+        dataset = dataset.filter(
+            lambda x: x['SQL'] not in wrong_queries
         )
+        self.logger.info(f'Removed {initial_len - len(dataset)} wrong queries from the training set')
+
         tokenizer = get_tokenizer(self.model_args, self.training_args)
         model = get_model(self.model_args, self.training_args)
         reward_funcs = get_reward_funcs(self.script_args)
@@ -146,7 +151,7 @@ class Think2SQLTrainer:
         self.logger.info("*** Train ***")
 
         checkpoint = None
-        if self.training_args.resume_from_checkpoint is not None:
+        if self.training_args.resume_from_checkpoint not in [None, "", 'false', 'False']:
             checkpoint = self.training_args.resume_from_checkpoint
             self.logger.info(
                 f"Resuming training from checkpoint specified in config `{self.training_args.resume_from_checkpoint}`"
@@ -161,7 +166,7 @@ class Think2SQLTrainer:
         train_result = trainer.train(resume_from_checkpoint=checkpoint)
 
         metrics = train_result.metrics
-        metrics["train_samples"] = len(dataset[self.script_args.dataset_train_split])
+        metrics["train_samples"] = len(dataset)
 
         trainer.log_metrics(split="train", metrics=metrics)
         trainer.save_metrics(split="train", metrics=metrics)
