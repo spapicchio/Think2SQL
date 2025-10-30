@@ -12,6 +12,8 @@ fi
 if [ -z "$WORK" ]; then
   echo "WORK variable is not set. Assuming running from ${BASE_WORK}."
   export WORK=${BASE_WORK}
+else
+  export WORK="${WORK}/Think2SQL"
 fi
 
 source "${WORK}/scripts/utils/utils.sh"

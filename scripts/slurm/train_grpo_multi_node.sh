@@ -14,131 +14,143 @@
 
 set -e
 
-source slurm/scripts/env_setup.sh
-source slurm/scripts/utils.sh
-source slurm/scripts/training_fun.sh
+module purge
+module load arch/a100
+module load cuda/12.4.1
+
+nvidia-smi
+
+source /lustre/fswork/projects/rech/wjx/uld58cl/deep_thinking/.venv/bin/activate
+
+source "${WORK}/.env"
+source "${WORK}/scripts/utils.sh"
+source
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #         Define the JOB ID of the run.
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# if you are relaunchin a job and want to keep the same folders for logging and continue training
-#MY_SLURM_JOB_ID='<your id>'
+# if you are relaunching a job and want to keep the same folders for logging and continue training
+#JOB_ID='<your id>'
+#export WANDB_RUN_ID='5wxzzpvx'
+JOB_ID=$SLURM_JOB_ID
 
-# if the job has been just launched
-MY_SLURM_JOB_ID=$SLURM_JOB_ID
+log_section "JOB_ID = ${JOB_ID}" "${JOB_NAME}"
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#  Define folders for logging Wandb/Tensorboard
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-#export WANDB_DIR="wandb/${MY_SLURM_JOB_ID}/"
-#export WANDB_ARTIFACT_DIR="wandb/${MY_SLURM_JOB_ID}/"
-LOGGING_DIR_TENSORBOARD="./.tensorboard_logging/${MY_SLURM_JOB_ID}/"
+# ----------- Configuration -----------
+export OMP_NUM_THREADS=50
+export WANDB_DIR="${WORK}/wandb/${JOB_ID}/"
+export WANDB_ARTIFACT_DIR="${WORK}/wandb/${JOB_ID}/"
+export TOKENIZERS_PARALLELISM=True
+LOGGING_DIR_TENSORBOARD="${WORK}/.tensorboard_logging/${JOB_ID}/"
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#         Set UP variables from slurm
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-JOB_NAME="${SLURM_JOB_NAME}-${SLURM_JOB_ID}"
+# ----------- Custom  Params -----------
+PROMPT_FOLDER="${WORK}/prompts"
+USER_PROMPT_NAME="base_think_user_prompt.jinja"
+SYSTEM_PROMPT_NAME="base_think_system_prompt.jinja"
 
-log_section "Log File in: logs/rl/${JOB_NAME}.out" "${JOB_NAME}"
-log_section "Wandb offline in: ${WANDB_DIR}" "${JOB_NAME}"
-log_section "Tensorboard in: ${LOGGING_DIR_TENSORBOARD}" "${JOB_NAME}"
+# ----------- Dataset Params -----------
+DATASET_NAME="${WORK}/data/omnisql/data/train_bird_processed.json"
+DB_PATH="${WORK}/data/omnisql/data/bird/train/train_databases"
 
-NUM_NODES=$SLURM_NNODES
-GPUS_PER_NODE=$SLURM_GPUS_PER_NODE
-WORLD_SIZE=$((NUM_NODES * GPUS_PER_NODE))
-NODELIST=($(scontrol show hostnames $SLURM_JOB_NODELIST))
-MASTER_ADDR=${NODELIST[0]} # First node for main process
-MASTER_PORT=6000
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#         VLLM parameters
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-TRAIN_NODES=("${NODELIST[@]:0:$((NUM_NODES - 1))}")
-TRAIN_NODES_STR=$(NODES="${TRAIN_NODES[*]}" python -c 'import os; print(",".join(os.getenv("NODES").split()))')
-
-VLLM_NODE=${NODELIST[-1]} # Last node
-WORLD_SIZE=$((WORLD_SIZE - GPUS_PER_NODE))
-NUM_NODES=$((NUM_NODES - 1))
-
-log_section "VLLM NODE: ${VLLM_NODE} - Training NODES: ${TRAIN_NODES_STR} - Total number of GPUs used for VLLM: ${GPUS_PER_NODE} - Total number of GPUs used for training: ${WORLD_SIZE}" "${JOB_NAME}"
-
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#         Training parameters
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#REWARD_FUNCS="qatch_metrics execution_accuracy format tag_count"
-#REWARD_WEIGHTS="0.70 0.20 0.05 0.05"
-
-REWARD_FUNCS="qatch_metrics format tag_count"
-REWARD_WEIGHTS="0.85 0.10 0.05"
-
-DATASET_NAME="simone-papicchio/bird"
-DB_PATH="${ALL_CCFRWORK}/data/bird_train/train_databases"
-
-COMPLEXITY_BUCKET=""
-SHARD_NUMBER=0
-FEW_SHOT=0
-
-ACCUMULATION_STEPS=8
-BS=8
-MAX_LENGTH=4096
-
-TOTAL_BATCH_SIZE=$((BS * ACCUMULATION_STEPS * WORLD_SIZE))
-NUM_GENERATIONS=16
-NUM_GENERATIONS=$(python slurm/scripts/utils_get_num_generations.py --num_gpus "$WORLD_SIZE" --bs "$BS" --max_generations "$NUM_GENERATIONS")
-log_section "Num of Generations: ${NUM_GENERATIONS}" "${JOB_NAME}"
-RL_MODEL_NAME="bs_${TOTAL_BATCH_SIZE}_ml_${MAX_LENGTH}_gen_${NUM_GENERATIONS}_${MY_SLURM_JOB_ID}_RL"
-
-# uncomment for finetuned model
-#SFT_MODEL='Qwen/size_3B_bs_128_ml_4096'
-#SFT_MODEL='Qwen/Qwen2.5-Coder-3B-Instruct_bs_128_ml_4096_sft_qwen_3B-CODER'
-#SFT_MODEL='Qwen/Qwen2.5-Coder-7B-Instruct_bs_128_ml_4096_1867319_SFT'
-
-#SFT_PATH="${ALL_CCFRWORK}/finetuned_models/sft/${SFT_MODEL}"
-#OUTPUT_DIR="${ALL_CCFRWORK}/finetuned_models/grpo/${SFT_MODEL}/${RL_MODEL_NAME}"
-
-# uncomment for base models
-#SFT_MODEL='Qwen/Qwen2.5-Coder-3B-Instruct'
-#SFT_MODEL='Qwen/Qwen2.5-Coder-7B-Instruct'
-#SFT_MODEL='Qwen/Qwen2.5-Coder-14B-Instruct'
-#SFT_MODEL='meta-llama/Llama-3.1-8B-Instruct'
-SFT_MODEL='deepseek-ai/DeepSeek-R1-Distill-Qwen-7B'
-SFT_PATH=$SFT_MODEL
-OUTPUT_DIR="${ALL_CCFRWORK}/base_models/grpo/${SFT_MODEL}/${RL_MODEL_NAME}"
-
+# ----------- Training Params -----------
+LOSS_TYPE='dapo'
+REWARD_FUNCS="EX"
+REWARD_WEIGHTS="1.0"
 LEARNING_RATE=1e-6
-NUM_EPOCHS=1
-PROMPT_NAME="text2sql_model_grpo"
-MAX_PROMPT_LENGTH=2048
-MAX_GRAD_NORM=0.2
-TEMPERATURE=0.7
-OPTIMIZER="adamw_8bit"
-CACHED_FILE_PATH="${WORK}/deep_thinking/cache_target_sql2execution_BIRD_train.pkl"
+NUM_EPOCHS=2
+BS=8
+ACCUMULATION_STEPS=8
+MAX_PROMPT_LENGTH=6000
+MAX_LENGTH=8192
+
+TOTAL_BATCH_SIZE=$((BS * ACCUMULATION_STEPS * NUM_GPUS))
+NUM_GENERATIONS=8
+NUM_GENERATIONS=$(python scripts/utils/get_num_generations.py --num_gpus "$NUM_GPUS" --bs "$BS" --max_generations "$NUM_GENERATIONS")
+echo "NUM_GENERATIONS: ${NUM_GENERATIONS}"
+
+RL_MODEL_NAME="bs${TOTAL_BATCH_SIZE}_ml${MAX_LENGTH}_gen${NUM_GENERATIONS}_${JOB_ID}_RL"
+echo "RL_MODEL_NAME: ${RL_MODEL_NAME}"
+
+MODEL_BASE='Qwen3-4B-Thinking-2507'
+MODEL_BASE_PATH="Qwen/${MODEL_BASE}"
+
+OUTPUT_DIR="${WORK}/model_trained/grpo/${MODEL_BASE}/${LOSS_TYPE}/${RL_MODEL_NAME}"
+mkdir -p "${OUTPUT_DIR}"
+
+# ----------- VLLM Server -----------
+setup_idris  # function in utils.sh
+
+VLLM_SERVER_PORT=$(python -c "import socket; s=socket.socket(); s.bind(('',0)); print(s.getsockname()[1]); s.close()")
+echo "SERVER_HOST: ${$VLLM_NODE}"
+echo "SERVER_PORT: ${VLLM_SERVER_PORT}"
+
+# https://huggingface.co/docs/trl/main/en/vllm_integration
+launch_trl_vllm ${DEVICE_VLLM} $MODEL_BASE_PATH false "$VLLM_NODE" "$VLLM_SERVER_PORT" "$SLURM_GPUS_PER_NODE" 15000
 
 
-
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#         Vllm serve
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-VLLM_SERVER_PORT=24879
-
-TP=$(python slurm/scripts/utils_get_tensor_parallel_size.py --model_name "$SFT_PATH" --default_tp "$GPUS_PER_NODE")
-log_section "Tensor parallel size : ${TP}" "${JOB_NAME}"
-
-srun \
---nodes=1 \
---ntasks=1 \
---nodelist=$VLLM_NODE \
-trl vllm-serve \
---model "$SFT_PATH" \
---data-parallel-size "${GPUS_PER_NODE}" \
---gpu-memory-utilization 0.85 \
---port "$VLLM_SERVER_PORT" \
---host="$VLLM_NODE" &
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #         Launcher
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+TRAINING_PARAMS=(
+        "${WORK}/src/think2sql/grpo/main_rl.py"
+        --config "${WORK}/config/config_train_grpo.yaml"
+        --prompt_folder "${PROMPT_FOLDER}"
+        --user_prompt_name "${USER_PROMPT_NAME}"
+        --system_prompt_name "${SYSTEM_PROMPT_NAME}"
+        --dataset_name "${DATASET_NAME}"
+        --relative_db_base_path "${DB_PATH}"
+        --loss_type "${LOSS_TYPE}"
+        --reward_funcs $REWARD_FUNCS
+        --reward_weights $REWARD_WEIGHTS
+        --learning_rate "${LEARNING_RATE}"
+        --num_train_epochs "${NUM_EPOCHS}"
+        --per_device_train_batch_size "${BS}"
+        --gradient_accumulation_steps "${ACCUMULATION_STEPS}"
+        --max_prompt_length "${MAX_PROMPT_LENGTH}"
+        --max_completion_length "${MAX_LENGTH}"
+        --num_generations "${NUM_GENERATIONS}"
+        --model_name_or_path "${MODEL_BASE_PATH}"
+        --output_dir "${OUTPUT_DIR}"
+
+        --logging_dir "${LOGGING_DIR_TENSORBOARD}"
+        --run_name "${JOB_NAME}"
+        --log_completions True
+        --num_completions_to_print 0
+        --vllm_server_host "${VLLM_SERVER_HOST}"
+        --vllm_server_port "${VLLM_SERVER_PORT}"
+        --save_steps 5
+        --save_total_limit 1
+        --ddp_timeout=7200  # https://github.com/huggingface/open-r1/issues/160
+)
+log_section "Script: ${TRAINING_PARAMS[*]}" "${JOB_NAME}"
+
+
+srun \
+--wait=60 \
+--kill-on-bad-exit=1 \
+--nodes=$NUM_NODES \
+--ntasks=$NUM_NODES \
+--nodelist=$TRAIN_NODES_STR \
+--export=ALL,PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True,TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD=1,NCCL_P2P_LEVEL=NVL \
+accelerate launch \
+--config_file "${WORK}/config/accelerate_config_grpo.yaml" \
+--num_machines $NUM_NODES \
+--num_processes $WORLD_SIZE \
+--main_process_ip $MASTER_ADDR \
+--main_process_port $MASTER_PORT \
+--machine_rank $SLURM_PROCID \
+--rdzv_backend=c10d \
+--max_restarts 1 \
+--tee 3 \
+--role $SLURMD_NODENAME \
+"${TRAINING_PARAMS[@]}" \
+
+# The chat template needs to be specified only for DeepSeek models
+#    --chat_template "{% if not add_generation_prompt is defined %}{% set add_generation_prompt = false %}{% endif %}{% set ns = namespace(is_first=false, is_tool=false, is_output_first=true, system_prompt='') %}{%- for message in messages %}{%- if message['role'] == 'system' %}{% set ns.system_prompt = message['content'] %}{%- endif %}{%- endfor %}{{bos_token}}{{ns.system_prompt}}{%- for message in messages %}{%- if message['role'] == 'user' %}{%- set ns.is_tool = false -%}{{'<｜User｜>' + message['content']}}{%- endif %}{%- if message['role'] == 'assistant' and message['content'] is none %}{%- set ns.is_tool = false -%}{%- for tool in message['tool_calls']%}{%- if not ns.is_first %}{{'<｜Assistant｜><｜tool▁calls▁begin｜><｜tool▁call▁begin｜>' + tool['type'] + '<｜tool▁sep｜>' + tool['function']['name'] + '\\n' + '```json' + '\\n' + tool['function']['arguments'] + '\\n' + '```' + '<｜tool▁call▁end｜>'}}{%- set ns.is_first = true -%}{%- else %}{{'\\n' + '<｜tool▁call▁begin｜>' + tool['type'] + '<｜tool▁sep｜>' + tool['function']['name'] + '\\n' + '```json' + '\\n' + tool['function']['arguments'] + '\\n' + '```' + '<｜tool▁call▁end｜>'}}{{'<｜tool▁calls▁end｜><｜end▁of▁sentence｜>'}}{%- endif %}{%- endfor %}{%- endif %}{%- if message['role'] == 'assistant' and message['content'] is not none %}{%- if ns.is_tool %}{{'<｜tool▁outputs▁end｜>' + message['content'] + '<｜end▁of▁sentence｜>'}}{%- set ns.is_tool = false -%}{%- else %}{% set content = message['content'] %}{{'<｜Assistant｜>' + content + '<｜end▁of▁sentence｜>'}}{%- endif %}{%- endif %}{%- if message['role'] == 'tool' %}{%- set ns.is_tool = true -%}{%- if ns.is_output_first %}{{'<｜tool▁outputs▁begin｜><｜tool▁output▁begin｜>' + message['content'] + '<｜tool▁output▁end｜>'}}{%- set ns.is_output_first = false %}{%- else %}{{'\\n<｜tool▁output▁begin｜>' + message['content'] + '<｜tool▁output▁end｜>'}}{%- endif %}{%- endif %}{%- endfor -%}{% if ns.is_tool %}{{'<｜tool▁outputs▁end｜>'}}{% endif %}{% if add_generation_prompt and not ns.is_tool %}{{'<｜Assistant｜>'}}{% endif %}"
+
 
 LAUNCHER="\
     srun \
@@ -191,14 +203,3 @@ LAUNCHER="\
     --return_shard_number ${SHARD_NUMBER} \
     --insert_few_shot ${FEW_SHOT} \
     --ddp_timeout 7200"
-
-# The chat template needs to be specified only for DeepSeek models
-#    --chat_template "{% if not add_generation_prompt is defined %}{% set add_generation_prompt = false %}{% endif %}{% set ns = namespace(is_first=false, is_tool=false, is_output_first=true, system_prompt='') %}{%- for message in messages %}{%- if message['role'] == 'system' %}{% set ns.system_prompt = message['content'] %}{%- endif %}{%- endfor %}{{bos_token}}{{ns.system_prompt}}{%- for message in messages %}{%- if message['role'] == 'user' %}{%- set ns.is_tool = false -%}{{'<｜User｜>' + message['content']}}{%- endif %}{%- if message['role'] == 'assistant' and message['content'] is none %}{%- set ns.is_tool = false -%}{%- for tool in message['tool_calls']%}{%- if not ns.is_first %}{{'<｜Assistant｜><｜tool▁calls▁begin｜><｜tool▁call▁begin｜>' + tool['type'] + '<｜tool▁sep｜>' + tool['function']['name'] + '\\n' + '```json' + '\\n' + tool['function']['arguments'] + '\\n' + '```' + '<｜tool▁call▁end｜>'}}{%- set ns.is_first = true -%}{%- else %}{{'\\n' + '<｜tool▁call▁begin｜>' + tool['type'] + '<｜tool▁sep｜>' + tool['function']['name'] + '\\n' + '```json' + '\\n' + tool['function']['arguments'] + '\\n' + '```' + '<｜tool▁call▁end｜>'}}{{'<｜tool▁calls▁end｜><｜end▁of▁sentence｜>'}}{%- endif %}{%- endfor %}{%- endif %}{%- if message['role'] == 'assistant' and message['content'] is not none %}{%- if ns.is_tool %}{{'<｜tool▁outputs▁end｜>' + message['content'] + '<｜end▁of▁sentence｜>'}}{%- set ns.is_tool = false -%}{%- else %}{% set content = message['content'] %}{{'<｜Assistant｜>' + content + '<｜end▁of▁sentence｜>'}}{%- endif %}{%- endif %}{%- if message['role'] == 'tool' %}{%- set ns.is_tool = true -%}{%- if ns.is_output_first %}{{'<｜tool▁outputs▁begin｜><｜tool▁output▁begin｜>' + message['content'] + '<｜tool▁output▁end｜>'}}{%- set ns.is_output_first = false %}{%- else %}{{'\\n<｜tool▁output▁begin｜>' + message['content'] + '<｜tool▁output▁end｜>'}}{%- endif %}{%- endif %}{%- endfor -%}{% if ns.is_tool %}{{'<｜tool▁outputs▁end｜>'}}{% endif %}{% if add_generation_prompt and not ns.is_tool %}{{'<｜Assistant｜>'}}{% endif %}"
-
-$LAUNCHER &
-PYTHON_PID=$!
-log_section "Script: ${LAUNCHER}" "${JOB_NAME}"
-
-wait $PYTHON_PID
-
-check_exit_status $? "Training" "${JOB_NAME}"
