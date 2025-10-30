@@ -12,21 +12,18 @@ per_device_train_batch_size: 4 # num_of_generations must be divisible by per_dev
 num_generations: 16
 
 learning_rate: 1.0e-06
-max_prompt_length: 3000
+max_prompt_length: 6000
 max_completion_length: 4096
-mask_truncated_completions: true  # When enabled, truncated completions are excluded from the loss calculation
+mask_truncated_completions: false  # When enabled, truncated completions are excluded from the loss calculation
 gradient_accumulation_steps: 32
 # ---------------------  New Params ---------------------
 loss_type: 'dapo'  # Available: 'grpo', 'dr_grpo', 'dapo', 'bnpo'
 beta: 0.0 # KL coefficient. If 0.0 (default), the reference model is not loaded, reducing memory usage and improving training speed.
 delta: null  #  Enables the upper clipping bound in two-sided GRPO loss when set to a float
-epsilon_high: null  # Upper clipping bound for GRPO loss Paper DAPO recommends 0.28.
-importance_sampling_level: 'token' # Controls whether importance sampling ratios are computed at the "token" or "sequence" level. "token" keeps the raw per-token log-probability ratios (one weight per token). "sequence" averages the log-probability ratios across valid tokens to produce a single ratio per sequence. The GSPO paper shows that sequence-level sampling often yields more stable training and better alignment with sequence-level rewards.
-scale_rewards: 'group' # 'group' standard deviation each group, 'batch' standard deviation across the batch, 'none' no scaling; 'False' no scaling is applied
+importance_sampling_level: 'sequence' # Controls whether importance sampling ratios are computed at the "token" or "sequence" level. "token" keeps the raw per-token log-probability ratios (one weight per token). "sequence" averages the log-probability ratios across valid tokens to produce a single ratio per sequence. The GSPO paper shows that sequence-level sampling often yields more stable training and better alignment with sequence-level rewards.
+scale_rewards: 'batch' # 'group' standard deviation each group, 'batch' standard deviation across the batch, 'none' no scaling; 'False' no scaling is applied
 sync_ref_model: false  # When enabled, the reference model is updated to match the current model at the end of each training epoch.
-ref_model_mixup_alpha: 0.6  # Alpha parameter for Beta distribution used in reference model mixup. Only relevant if sync_ref_model is True.
-ref_model_sync_steps: 512 # Number of steps between reference model syncs. Only relevant if sync_ref_model is True.
-top_entropy_quantile: 1.0  # Proportion of samples to use for entropy calculation. 1.0 uses all samples, 0.5 uses the top 50% most uncertain samples, etc.
+epsilon_high: 0.28  # Upper clipping bound for GRPO loss
 # ----------------------------------------------------------
 
 
@@ -56,7 +53,7 @@ bf16: true
 do_eval: false
 eval_strategy: "no"
 use_vllm: true
-vllm_gpu_memory_utilization: 0.7
+vllm_gpu_memory_utilization: 0.85
 vllm_server_host: 127.0.0.1
 vllm_server_port: 24879
 
@@ -78,11 +75,9 @@ report_to:
 reward_funcs:
   - EX
   - format
-  - tag_count
 reward_weights:
-  - 1.0
-  - 0.1
-  - 0.1
+  - 0.85
+  - 0.15
 save_strategy: "steps"
 save_steps: 5
 save_total_limit: 1
@@ -90,8 +85,8 @@ seed: 42
 wandb_log_unique_prompts: true
 
 # https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct/blob/main/generation_config.json
-temperature: 0.7        # vendor default
-top_p: 0.8              # vendor default (add this; it’s in the model config)
+temperature: 0.6        # vendor default
+top_p: 0.95              # vendor default (add this; it’s in the model config)
 top_k: 20               # vendor default
 repetition_penalty: 1.1 # vendor default
 optim: adamw_8bit
