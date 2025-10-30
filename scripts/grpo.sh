@@ -12,8 +12,8 @@ echo "GPU_VLLM: ${DEVICE_VLLM}"
 # --- robust shell settings ---
 set -Eeuo pipefail
 
-source "${WORK}/.env"
-source "${WORK}/scripts/utils/utils.sh"
+source "${BASE_WORK}/.env"
+source "${BASE_WORK}/scripts/utils/utils.sh"
 
 
 # If one job crash and you want to start from it again,
@@ -26,19 +26,19 @@ log_section "JOB_ID = ${JOB_ID}" "${JOB_NAME}"
 
 # ----------- Configuration -----------
 export OMP_NUM_THREADS=50
-export WANDB_DIR="${WORK}/wandb/${JOB_ID}/"
-export WANDB_ARTIFACT_DIR="${WORK}/wandb/${JOB_ID}/"
+export WANDB_DIR="${BASE_WORK}/wandb/${JOB_ID}/"
+export WANDB_ARTIFACT_DIR="${BASE_WORK}/wandb/${JOB_ID}/"
 export TOKENIZERS_PARALLELISM=True
-LOGGING_DIR_TENSORBOARD="${WORK}/.tensorboard_logging/${JOB_ID}/"
+LOGGING_DIR_TENSORBOARD="${BASE_WORK}/.tensorboard_logging/${JOB_ID}/"
 
 # ----------- Custom  Params -----------
-PROMPT_FOLDER="${WORK}/prompts"
+PROMPT_FOLDER="${BASE_WORK}/prompts"
 USER_PROMPT_NAME="base_think_user_prompt.jinja"
 SYSTEM_PROMPT_NAME="base_think_system_prompt.jinja"
 
 # ----------- Dataset Params -----------
-DATASET_NAME="${WORK}/data/omnisql/data/train_bird_processed.json"
-DB_PATH="${WORK}/data/omnisql/data/bird/train/train_databases"
+DATASET_NAME="${BASE_WORK}/data/omnisql/data/train_bird_processed.json"
+DB_PATH="${BASE_WORK}/data/omnisql/data/bird/train/train_databases"
 
 # ----------- Training Params -----------
 LOSS_TYPE='dapo'
@@ -62,7 +62,7 @@ echo "RL_MODEL_NAME: ${RL_MODEL_NAME}"
 MODEL_BASE='Qwen3-4B-Thinking-2507'
 MODEL_BASE_PATH="Qwen/${MODEL_BASE}"
 
-OUTPUT_DIR="${WORK}/model_trained/grpo/${MODEL_BASE}/${LOSS_TYPE}/${RL_MODEL_NAME}"
+OUTPUT_DIR="${BASE_WORK}/model_trained/grpo/${MODEL_BASE}/${LOSS_TYPE}/${RL_MODEL_NAME}"
 mkdir -p "${OUTPUT_DIR}"
 
 # ----------- VLLM Server -----------
@@ -94,10 +94,10 @@ launch_trl_vllm ${DEVICE_VLLM} $MODEL_BASE_PATH false "$VLLM_SERVER_HOST" "$VLLM
 
 LAUNCHER=(
         accelerate launch
-        --config_file "${WORK}/config/accelerate_config_grpo.yaml"
+        --config_file "${BASE_WORK}/config/accelerate_config_grpo.yaml"
         --num_processes "$NUM_GPUS"
-        "${WORK}/src/think2sql/grpo/main_rl.py"
-        --config "${WORK}/config/config_train_grpo.yaml"
+        "${BASE_WORK}/src/think2sql/grpo/main_rl.py"
+        --config "${BASE_WORK}/config/config_train_grpo.yaml"
         --prompt_folder "${PROMPT_FOLDER}"
         --user_prompt_name "${USER_PROMPT_NAME}"
         --system_prompt_name "${SYSTEM_PROMPT_NAME}"

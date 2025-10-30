@@ -5,7 +5,6 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --gpus-per-node=4
 #SBATCH --nodes=2
-#SBATCH --output=./logs/rl/%x-%j.out
 #SBATCH --qos=qos_gpu_h100-t3
 #SBATCH --time=20:00:00
 #SBATCH --cpus-per-task=100
@@ -20,15 +19,11 @@ module load cuda/12.4.1
 
 nvidia-smi
 
-source /lustre/fswork/projects/rech/wjx/uld58cl/deep_thinking/.venv/bin/activate
+source "${BASE_WORK}/.venv/bin/activate"
+source "${BASE_WORK}/.env"
+source "${BASE_WORK}/scripts/utils.sh"
 
-source "${WORK}/.env"
-source "${WORK}/scripts/utils.sh"
-source
-
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#         Define the JOB ID of the run.
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# ----------- JOB ID of the run -----------
 # if you are relaunching a job and want to keep the same folders for logging and continue training
 #JOB_ID='<your id>'
 #export WANDB_RUN_ID='5wxzzpvx'
@@ -39,19 +34,19 @@ log_section "JOB_ID = ${JOB_ID}" "${JOB_NAME}"
 
 # ----------- Configuration -----------
 export OMP_NUM_THREADS=50
-export WANDB_DIR="${WORK}/wandb/${JOB_ID}/"
-export WANDB_ARTIFACT_DIR="${WORK}/wandb/${JOB_ID}/"
+export WANDB_DIR="${BASE_WORK}/wandb/${JOB_ID}/"
+export WANDB_ARTIFACT_DIR="${BASE_WORK}/wandb/${JOB_ID}/"
 export TOKENIZERS_PARALLELISM=True
-LOGGING_DIR_TENSORBOARD="${WORK}/.tensorboard_logging/${JOB_ID}/"
+LOGGING_DIR_TENSORBOARD="${BASE_WORK}/.tensorboard_logging/${JOB_ID}/"
 
 # ----------- Custom  Params -----------
-PROMPT_FOLDER="${WORK}/prompts"
+PROMPT_FOLDER="${BASE_WORK}/prompts"
 USER_PROMPT_NAME="base_think_user_prompt.jinja"
 SYSTEM_PROMPT_NAME="base_think_system_prompt.jinja"
 
 # ----------- Dataset Params -----------
-DATASET_NAME="${WORK}/data/omnisql/data/train_bird_processed.json"
-DB_PATH="${WORK}/data/omnisql/data/bird/train/train_databases"
+DATASET_NAME="${BASE_WORK}/data/omnisql/data/train_bird_processed.json"
+DB_PATH="${BASE_WORK}/data/omnisql/data/bird/train/train_databases"
 
 
 # ----------- Training Params -----------
@@ -95,8 +90,8 @@ launch_trl_vllm ${DEVICE_VLLM} $MODEL_BASE_PATH false "$VLLM_NODE" "$VLLM_SERVER
 #         Launcher
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 TRAINING_PARAMS=(
-        "${WORK}/src/think2sql/grpo/main_rl.py"
-        --config "${WORK}/config/config_train_grpo.yaml"
+        "${BASE_WORK}/src/think2sql/grpo/main_rl.py"
+        --config "${BASE_WORK}/config/config_train_grpo.yaml"
         --prompt_folder "${PROMPT_FOLDER}"
         --user_prompt_name "${USER_PROMPT_NAME}"
         --system_prompt_name "${SYSTEM_PROMPT_NAME}"
@@ -136,7 +131,7 @@ srun \
 --nodelist=$TRAIN_NODES_STR \
 --export=ALL,PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True,TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD=1,NCCL_P2P_LEVEL=NVL \
 accelerate launch \
---config_file "${WORK}/config/accelerate_config_grpo.yaml" \
+--config_file "${BASE_WORK}/config/accelerate_config_grpo.yaml" \
 --num_machines $NUM_NODES \
 --num_processes $WORLD_SIZE \
 --main_process_ip $MASTER_ADDR \
@@ -203,3 +198,9 @@ LAUNCHER="\
     --return_shard_number ${SHARD_NUMBER} \
     --insert_few_shot ${FEW_SHOT} \
     --ddp_timeout 7200"
+
+
+if [[ -z "${STORE}"]]; then
+    echo "Moving trained model into STORE: ${STORE}"
+    mkdir -p "${OUTPUT_DIR}"
+    mv
