@@ -18,6 +18,7 @@ else
   BASE_WORK="${WORK}/Think2SQL"
 fi
 
+export BASE_WORK 
 source "${BASE_WORK}/scripts/utils/utils.sh"
 
 JOB_SCRIPT="$1"
@@ -50,7 +51,7 @@ chmod 770 "$FAKE_JOB_PATH"
 LOG_FOLDER="${BASE_WORK}/tmux_log/${DATE_DIR}"
 if [ -z "${2:-}" ]; then
   echo 'NOT sending with sbatch'
-  LOG_FOLDER = "${LOG_FOLDER}/${TIME_TAG}-${MY_SLURM_JOB_ID}"
+  LOG_FOLDER="${LOG_FOLDER}/${TIME_TAG}-${MY_SLURM_JOB_ID}"
   mkdir -p "${LOG_FOLDER}"
   tmux new-session -d -s "${MY_SLURM_JOB_ID}" \
     "BASE_WORK=${BASE_WORK} \
@@ -61,11 +62,7 @@ if [ -z "${2:-}" ]; then
     stdbuf -oL tee >(stdbuf -oL grep 'WARNING' >> ${LOG_FOLDER}/warning.log) | \
     stdbuf -oL tee >(stdbuf -oL grep 'ERROR' >> ${LOG_FOLDER}/error.log)"
 else
-  JOB_OUTPUT=$(
-    sbatch \
-      --export=ALL,JOB_ID=$JOB_ID,BASE_WORK=$BASE_WORK \
-      "${FAKE_JOB_PATH}"
-  )
+  JOB_OUTPUT=$(sbatch --export="ALL,BASE_WORK=${BASE_WORK}" "${FAKE_JOB_PATH}")
   MY_SLURM_JOB_ID=$(echo "$JOB_OUTPUT" | awk '{print $4}')
 
   LOG_FOLDER="${LOG_FOLDER}/${TIME_TAG}-${JOB_NAME}-${MY_SLURM_JOB_ID}"

@@ -18,10 +18,10 @@ source "${BASE_WORK}/scripts/utils/utils.sh"
 
 # If one job crash and you want to start from it again,
 # set the JOB_ID to the one you want to resume from
-# JOB_ID='qwen-think4-d2e7aafc'
-# export WANDB_RUN_ID='5wxzzpvx'
+JOB_ID='qwen-think4-6e12dc09'
+export WANDB_RUN_ID='0czrmvbj'
 
-JOB_ID=${MY_SLURM_JOB_ID}
+# JOB_ID=${MY_SLURM_JOB_ID}
 
 log_section "JOB_ID = ${JOB_ID}" "${JOB_ID}"
 
