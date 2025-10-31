@@ -1,0 +1,44 @@
+Fri Oct 31 15:10:24 2025       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 570.86.15              Driver Version: 570.86.15      CUDA Version: 12.8     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA A100-SXM4-80GB          On  |   00000000:48:00.0 Off |                    0 |
+| N/A   29C    P0             65W /  400W |       1MiB /  81920MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+|   1  NVIDIA A100-SXM4-80GB          On  |   00000000:CB:00.0 Off |                    0 |
+| N/A   34C    P0             85W /  400W |       1MiB /  81920MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+                                                                                         
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+Audited 263 packages in 0.91ms
+total 3704
+drwxr-s--- 2 uld58cl vno    4096 Oct 30 15:10 config
+-rw-r----- 1 uld58cl vno   11357 Oct 30 15:10 LICENSE
+drwxr-s--- 3 uld58cl vno    4096 Oct 30 18:00 logs
+-rw-r----- 1 uld58cl vno    3761 Oct 31 15:10 log_sbatch.log
+-rw-r----- 1 uld58cl vno    6766 Oct 30 15:10 merge_pred_caches.py
+drwxr-s--- 2 uld58cl vno    4096 Oct 30 15:10 prompts
+-rw-r----- 1 uld58cl vno    1550 Oct 30 15:10 pyproject.toml
+-rw-r----- 1 uld58cl vno      11 Oct 30 15:10 README.md
+drwxr-s--- 6 uld58cl vno    4096 Oct 31 12:35 scripts
+drwxr-s--- 3 uld58cl vno    4096 Oct 30 15:10 src
+drwxr-s--- 2 uld58cl vno    4096 Oct 30 15:10 tests
+drwxr-s--- 3 uld58cl vno    4096 Oct 31 12:36 tmux_log
+-rw-r----- 1 uld58cl vno 3360891 Oct 30 15:10 train_wrong_queries.json
+-rw-r----- 1 uld58cl vno  364641 Oct 31 11:50 uv.lock
+loading utils.sh with LOGFILE: /lustre/fsn1/projects/rech/vno/uld58cl/Think2SQL/log_sbatch.log
+/var/spool/slurmd/job1324472/slurm_script: line 32: /lustre/fsn1/projects/rech/vno/uld58cl/Think2SQL/.env: No such file or directory
+[CLEANUP] exit code: 1
+[CLEANUP] exit code: 1

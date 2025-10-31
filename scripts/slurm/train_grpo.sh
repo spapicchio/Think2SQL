@@ -20,12 +20,16 @@ module load cuda/12.4.1
 
 nvidia-smi
 
-export BASE_WORK="${SCRATCH}"
+export BASE_WORK="${SCRATCH}/Think2SQL"
+cd $BASE_WORK
 
 source "${BASE_WORK}/scripts/utils/utils.sh"
-source "${BASE_WORK}/.venv/bin/activate"
 source "${BASE_WORK}/.env"
 setup_idris  # function in utils.sh
+
+uv sync --frozen
+source "${BASE_WORK}/.venv/bin/activate"
+
 
 log_section "Environment and modules loaded with BASE_WORK=${BASE_WORK}" "${SLURM_JOB_ID}"
 
@@ -45,7 +49,6 @@ echo "GPU_VLLM: ${DEVICE_VLLM}"
 JOB_ID=$SLURM_JOB_ID
 
 log_section "JOB_ID = ${JOB_ID}" "${JOB_ID}"
-log_section "VLLM NODE: ${VLLM_NODE} - Training NODES: ${TRAIN_NODES_STR} - Total number of GPUs used for VLLM: ${SLURM_GPUS_PER_NODE} - Total number of GPUs used for training: ${WORLD_SIZE}" "${JOB_ID}"
 
 
 # ----------- Configuration -----------

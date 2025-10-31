@@ -67,13 +67,14 @@ else
   MY_SLURM_JOB_ID=$(echo "$JOB_OUTPUT" | awk '{print $4}')
 
   LOG_FOLDER="${LOG_FOLDER}/${TIME_TAG}-${JOB_NAME}-${MY_SLURM_JOB_ID}"
-  SLURM_LOG="./logs/rl/${JOB_NAME}-${MY_SLURM_JOB_ID}.out"
+  mkdir -p $LOG_FOLDER
+  SLURM_LOG="${BASE_WORK}/logs/rl/${JOB_NAME}-${MY_SLURM_JOB_ID}.out"
   ln -s "$SLURM_LOG" "${LOG_FOLDER}/all.out"
 
   NEW_PATH="${DEST_DIR}/${TIME_TAG}-${JOB_NAME}-${MY_SLURM_JOB_ID}.sh"
-  mv "$FAKE_JOB_PATH" NEW_PATH
+  mv "$FAKE_JOB_PATH" "${NEW_PATH}"
   FAKE_JOB_PATH=$NEW_PATH
 fi
 
-log_section "[SUBMIT_AND_LOG] TMUX log $LOG_FOLDER" "${MY_SLURM_JOB_ID}"
+log_section "[SUBMIT_AND_LOG] TMUX log ${LOG_FOLDER}/all.out" "${MY_SLURM_JOB_ID}"
 log_section "[SUBMIT_AND_LOG] created file $FAKE_JOB_PATH" "${JOB_NAME}-${MY_SLURM_JOB_ID}"

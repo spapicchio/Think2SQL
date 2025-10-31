@@ -1,0 +1,28 @@
+Fri Oct 31 12:40:34 2025       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 570.86.15              Driver Version: 570.86.15      CUDA Version: 12.8     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA A100-SXM4-80GB          On  |   00000000:48:00.0 Off |                    0 |
+| N/A   29C    P0             64W /  400W |       1MiB /  81920MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+|   1  NVIDIA A100-SXM4-80GB          On  |   00000000:C8:00.0 Off |                    0 |
+| N/A   30C    P0             88W /  400W |       1MiB /  81920MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+                                                                                         
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+loading utils.sh with LOGFILE: /lustre/fsn1/projects/rech/vno/uld58cl/Think2SQL/log_sbatch.log
+/var/spool/slurmd/job1321961/slurm_script: line 27: /lustre/fsn1/projects/rech/vno/uld58cl/Think2SQL/.env: No such file or directory
+[CLEANUP] exit code: 1
+[CLEANUP] exit code: 1
