@@ -20,9 +20,10 @@ module load cuda/12.4.1
 
 nvidia-smi
 
+BASE_WORK=$(load_base_work)
 source "${BASE_WORK}/.venv/bin/activate"
 source "${BASE_WORK}/.env"
-source "${BASE_WORK}/scripts/utils.sh"
+source "${BASE_WORK}/scripts/utils/utils.sh"
 setup_idris  # function in utils.sh
 
 # ----------- JOB ID of the run -----------

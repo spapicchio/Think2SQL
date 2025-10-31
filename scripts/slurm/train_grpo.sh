@@ -3,7 +3,7 @@
 #SBATCH -C a100
 #SBATCH --job-name=rl-exp-30
 #SBATCH --ntasks-per-node=1
-#SBATCH --gpus-per-node=8
+#SBATCH --gpus-per-node=2
 #SBATCH --output=./logs/rl/%x-%j.out
 #SBATCH --nodes=1
 #SBATCH --qos=qos_gpu_a100-dev
@@ -20,16 +20,19 @@ module load cuda/12.4.1
 
 nvidia-smi
 
-source "${BASE_WORK}/scripts/utils.sh"
+export BASE_WORK="${SCRATCH}"
+
+source "${BASE_WORK}/scripts/utils/utils.sh"
 source "${BASE_WORK}/.venv/bin/activate"
 source "${BASE_WORK}/.env"
+setup_idris  # function in utils.sh
 
 log_section "Environment and modules loaded with BASE_WORK=${BASE_WORK}" "${SLURM_JOB_ID}"
 
-DEVICE_TRL='0,1,2,3'
-NUM_GPUS=4
-DEVICE_VLLM='4,5,6,7'
-NUM_GPU_RESERVED_VLLM=4
+DEVICE_TRL='0'
+NUM_GPUS=1
+DEVICE_VLLM='1'
+NUM_GPU_RESERVED_VLLM=1
 
 echo "NUM_GPUS: ${NUM_GPUS}"
 echo "GPU_VLLM: ${DEVICE_VLLM}"

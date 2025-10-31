@@ -1,8 +1,11 @@
 #!/bin/bash
 
+if [ -z "$BASE_WORK" ]; then
+  echo "BASE_WORK not set. must be set before sourcing utils.sh"
+  exit 1
+fi
 LOGFILE="${BASE_WORK}/log_sbatch.log"
-
-echo 'loading utils.sh'
+echo "loading utils.sh with LOGFILE: ${LOGFILE}"
 
 log_section() {
   local msg="$1"
@@ -142,8 +145,6 @@ function job_requeue {
 trap job_requeue USR1
 
 function setup_idris {
-  # Set the HF home to the shared directory
-  export HF_HOME="$ALL_CCFRWORK/hf_cache"
   # Set some env variable for running on compute nodes without internet access
   export GIT_PYTHON_REFRESH=quiet
   export HF_DATASETS_OFFLINE=1
