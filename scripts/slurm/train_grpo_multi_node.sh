@@ -20,11 +20,20 @@ module load cuda/12.4.1
 
 nvidia-smi
 
-BASE_WORK=$(load_base_work)
-source "${BASE_WORK}/.venv/bin/activate"
+export BASE_WORK="${SCRATCH}/Think2SQL"
+cd $BASE_WORK
+
 source "${BASE_WORK}/.env"
 source "${BASE_WORK}/scripts/utils/utils.sh"
+trap job_requeue USR1  # Function in utils to requeue job on signal
+
 setup_idris  # function in utils.sh
+
+uv sync --frozen
+source "${BASE_WORK}/.venv/bin/activate"
+
+
+log_section "Environment and modules loaded with BASE_WORK=${BASE_WORK}" "${SLURM_JOB_ID}"
 
 # ----------- JOB ID of the run -----------
 # if you are relaunching a job and want to keep the same folders for logging and continue training

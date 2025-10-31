@@ -23,8 +23,10 @@ nvidia-smi
 export BASE_WORK="${SCRATCH}/Think2SQL"
 cd $BASE_WORK
 
-source "${BASE_WORK}/scripts/utils/utils.sh"
 source "${BASE_WORK}/.env"
+source "${BASE_WORK}/scripts/utils/utils.sh"
+trap job_requeue USR1  # Function in utils to requeue job on signal
+
 setup_idris  # function in utils.sh
 
 uv sync --frozen

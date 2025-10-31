@@ -131,8 +131,6 @@ cleanup() {
   return $code
 }
 
-trap cleanup EXIT ERR INT TERM
-
 # Requeueing
 function job_requeue {
   local job_name="${SLURM_JOB_NAME}-${SLURM_JOB_ID}"
@@ -141,8 +139,6 @@ function job_requeue {
   date
   scontrol requeue "$SLURM_JOBID"
 }
-
-trap job_requeue USR1
 
 function setup_idris {
   # Set some env variable for running on compute nodes without internet access
