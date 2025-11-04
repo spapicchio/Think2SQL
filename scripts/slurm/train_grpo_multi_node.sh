@@ -59,8 +59,8 @@ USER_PROMPT_NAME="base_think_user_prompt.jinja"
 SYSTEM_PROMPT_NAME="base_think_system_prompt.jinja"
 
 # ----------- Dataset Params -----------
-DATASET_NAME="~/data/train_bird_processed.json"
-DB_PATH="~/data/bird/train/train_databases"
+DATASET_NAME="data/train_bird_processed.json"
+DB_PATH="data/bird/train/train_databases"
 
 
 # ----------- Training Params -----------
