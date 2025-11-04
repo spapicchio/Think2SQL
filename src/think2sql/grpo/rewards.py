@@ -58,7 +58,6 @@ def nl2sql_reward(
 
     scores = evaluator.execute_metric(
         tasks=tasks,
-        metric='cp_cr_tc',
         *args,
         **kwargs
     )

@@ -20,10 +20,10 @@ trap cleanup EXIT ERR INT TERM # Clenup is a function to trap and remove the onl
 
 # If one job crash and you want to start from it again,
 # set the JOB_ID to the one you want to resume from
-JOB_ID='qwen-think4-6e12dc09'
-export WANDB_RUN_ID='0czrmvbj'
+#JOB_ID='qwen-think4-6e12dc09'
+#export WANDB_RUN_ID='0czrmvbj'
 
-# JOB_ID=${MY_SLURM_JOB_ID}
+ JOB_ID=${MY_SLURM_JOB_ID}
 
 log_section "JOB_ID = ${JOB_ID}" "${JOB_ID}"
 
@@ -45,8 +45,8 @@ DB_PATH="${BASE_WORK}/data/omnisql/data/bird/train/train_databases"
 
 # ----------- Training Params -----------
 LOSS_TYPE='dapo'
-REWARD_FUNCS="EX"
-REWARD_WEIGHTS="1.0"
+REWARD_FUNCS="QATCH format"
+REWARD_WEIGHTS="0.9 0.1"
 LEARNING_RATE=1e-6
 NUM_EPOCHS=2
 BS=8

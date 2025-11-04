@@ -300,3 +300,8 @@ class GRPOScriptArguments(EvaluateArgs):
                     ' Possible values: "EX", "QATCH", "format", "tag_count"'
         },
     )
+
+    def __post_init__(self):
+        super().__post_init__()
+        if isinstance(self.reward_funcs, str):
+            self.reward_funcs = [func.strip() for func in self.reward_funcs.split()]

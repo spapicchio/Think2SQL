@@ -91,12 +91,11 @@ launch_trl_vllm() {
     NCCL_P2P_LEVEL=NVL \
     PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
     "${launcher[@]}" &
-
-  VLLM_PID=$!
-  VLLM_PGID=$(ps -o pgid= "$VLLM_PID" | tr -d ' ')
-  export VLLM_PID
-  export VLLM_PGID
-  echo "vLLM PID: $VLLM_PID (PGID: $VLLM_PGID)"
+    VLLM_PID=$!
+    VLLM_PGID=$(ps -o pgid= "$VLLM_PID" | tr -d ' ')
+    export VLLM_PID
+    export VLLM_PGID
+    echo "vLLM PID: $VLLM_PID (PGID: $VLLM_PGID)"
   fi
 }
 

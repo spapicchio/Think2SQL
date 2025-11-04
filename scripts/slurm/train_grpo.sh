@@ -72,8 +72,8 @@ DB_PATH="~/data/bird/train/train_databases"
 
 # ----------- Training Params -----------
 LOSS_TYPE='dapo'
-REWARD_FUNCS="EX"
-REWARD_WEIGHTS="1.0"
+REWARD_FUNCS="QATCH format"
+REWARD_WEIGHTS="0.9 0.1"
 LEARNING_RATE=1e-6
 NUM_EPOCHS=2
 BS=8
