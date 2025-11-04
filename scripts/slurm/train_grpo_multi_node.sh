@@ -91,7 +91,7 @@ log_section "OUTPUT_DIR: ${OUTPUT_DIR}" "${JOB_ID}"
 
 # ----------- VLLM Server -----------
 VLLM_SERVER_PORT=$(python -c "import socket; s=socket.socket(); s.bind(('',0)); print(s.getsockname()[1]); s.close()")
-echo "SERVER_HOST: ${$VLLM_NODE}"
+echo "SERVER_HOST: ${VLLM_NODE}"
 echo "SERVER_PORT: ${VLLM_SERVER_PORT}"
 
 # https://huggingface.co/docs/trl/main/en/vllm_integration
