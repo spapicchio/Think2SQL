@@ -85,7 +85,6 @@ log_section "RL_MODEL_NAME: ${RL_MODEL_NAME}" "${JOB_ID}"
 
 MODEL_BASE='Qwen3-4B-Instruct-2507'
 MODEL_BASE_PATH="Qwen/${MODEL_BASE}"
-MODEL_BASE_PATH=$(python scripts/utils/get_model_path_hf_cache.py --cache_dir "${HF_HOME}" --model_id "${MODEL_BASE_PATH}")
 
 OUTPUT_DIR="${BASE_WORK}/model_trained/grpo/${MODEL_BASE}/${LOSS_TYPE}/${RL_MODEL_NAME}"
 mkdir -p "${OUTPUT_DIR}"
@@ -97,8 +96,9 @@ echo "SERVER_HOST: ${VLLM_NODE}"
 echo "SERVER_PORT: ${VLLM_SERVER_PORT}"
 
 # https://huggingface.co/docs/trl/main/en/vllm_integration
-launch_trl_vllm ${DEVICE_VLLM} $MODEL_BASE_PATH true "$VLLM_NODE" "$VLLM_SERVER_PORT" "$SLURM_GPUS_PER_NODE" "${MAX_MODEL_LENGTH}"
+log_section "Launching VLLM 'launch_trl_vllm ${TRAIN_NODES_STR} $MODEL_BASE_PATH true $VLLM_NODE $VLLM_SERVER_PORT $SLURM_GPUS_PER_NODE ${MAX_MODEL_LENGTH}'"
 
+launch_trl_vllm ${TRAIN_NODES_STR} "$MODEL_BASE_PATH" true "$VLLM_NODE" "$VLLM_SERVER_PORT" "$SLURM_GPUS_PER_NODE" "${MAX_MODEL_LENGTH}"
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #         Launcher
