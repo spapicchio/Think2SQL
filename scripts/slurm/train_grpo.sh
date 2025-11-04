@@ -22,6 +22,7 @@ nvidia-smi
 
 export BASE_WORK="${SCRATCH}/Think2SQL"
 cd $BASE_WORK
+export HF_HOME='${SCRATCH}/hf_cache'
 
 source "${BASE_WORK}/.env"
 source "${BASE_WORK}/scripts/utils/utils.sh"
@@ -92,6 +93,8 @@ log_section "RL_MODEL_NAME: ${RL_MODEL_NAME}" "${JOB_ID}"
 
 MODEL_BASE='Qwen3-4B-Instruct-2507'
 MODEL_BASE_PATH="Qwen/${MODEL_BASE}"
+MODEL_BASE_PATH=$(python scripts/utils/get_model_path_hf_cache.py --cache_dir "${HF_HOME}" --model_id "${MODEL_BASE_PATH}")
+
 
 OUTPUT_DIR="${BASE_WORK}/model_trained/grpo/${MODEL_BASE}/${LOSS_TYPE}/${RL_MODEL_NAME}"
 mkdir -p "${OUTPUT_DIR}"
