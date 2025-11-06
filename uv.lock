@@ -700,6 +700,20 @@ wheels = [
 ]
 
 [[package]]
+name = "duckdb"
+version = "1.5.0.dev94"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/fc/23/690341f9d07eae3a33d07cce4f6730856c085331d5819ed09e68409ec6cf/duckdb-1.5.0.dev94.tar.gz", hash = "sha256:14f44ec532d2d151f65e4e55306f429f7b9fc3c38f1c1788bb87bf8d003bfbb8", size = 18535753 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4f/dd/1de522e36e90c5a1ca96d4fa310f31481b6b6610d752e15382e4f080423b/duckdb-1.5.0.dev94-cp312-cp312-macosx_10_13_universal2.whl", hash = "sha256:2b59bf525547359cd54e50fbad4146f7216bed253dfc9359ca397af853b049c2", size = 29017802 },
+    { url = "https://files.pythonhosted.org/packages/d8/88/da6df3253d90239fcf98835876c9c7fee9944505fbc659fcfa89693d7e71/duckdb-1.5.0.dev94-cp312-cp312-macosx_10_13_x86_64.whl", hash = "sha256:fc723756502744c41f7831c4651a88120d9631dda9042e98758a8eb6a9938ff7", size = 16166786 },
+    { url = "https://files.pythonhosted.org/packages/a6/54/4c17309d52914d9eb4af065047504d0dd81c1860638266cc77cacc06009c/duckdb-1.5.0.dev94-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:eb853867a039ec0ee30632f0771ea07e69be23f3637a19330f3af598a84be3d6", size = 13732910 },
+    { url = "https://files.pythonhosted.org/packages/01/af/33ef8bf7a348099e5d29b309faf7b8a932e7b648fb5f61b485ea05f2cb14/duckdb-1.5.0.dev94-cp312-cp312-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:e666bd9c21d3413102acb977558116ac4eb4635c1c38f9dfebd9cd5daab14e4f", size = 18545384 },
+    { url = "https://files.pythonhosted.org/packages/84/4c/34f218cbe8b95875ac0d8e0e8beca0c40a777096dfbf08d7d2a7253f0499/duckdb-1.5.0.dev94-cp312-cp312-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:e30f580eabb25fda4e84f6ac0da938b276f0b50f7fe48a7ed9b17bc9b331de93", size = 20545885 },
+    { url = "https://files.pythonhosted.org/packages/0e/e0/082f57ece190f58ee08a16fb1b3579b75e981fc89e4eb5f77c88e2c095d1/duckdb-1.5.0.dev94-cp312-cp312-win_amd64.whl", hash = "sha256:32ce2fd0f3061a056347db53733ed1f67619101ed79e0b9120602737aea2de65", size = 12362989 },
+]
+
+[[package]]
 name = "einops"
 version = "0.8.1"
 source = { registry = "https://pypi.org/simple" }
@@ -3286,6 +3300,7 @@ dependencies = [
     { name = "datasets" },
     { name = "deepspeed" },
     { name = "deepspeed-kernels" },
+    { name = "duckdb" },
     { name = "emoji" },
     { name = "fire" },
     { name = "flash-attn" },
@@ -3316,6 +3331,7 @@ requires-dist = [
     { name = "datasets", specifier = ">=4.0.0" },
     { name = "deepspeed", specifier = ">=0.16.8" },
     { name = "deepspeed-kernels", specifier = ">=0.0.1.dev1698255861" },
+    { name = "duckdb", specifier = ">=1.5.0.dev94" },
     { name = "emoji", specifier = ">=2.15.0" },
     { name = "fire", specifier = ">=0.7.1" },
     { name = "flash-attn", url = "https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.8cxx11abiFALSE-cp312-cp312-linux_x86_64.whl" },

@@ -35,6 +35,7 @@ dependencies = [
     "flashinfer-python>=0.4.1",
     "flashinfer-cubin>=0.4.1",
     "flash-attn==2.8.3",
+    "duckdb>=1.5.0.dev94",
 ]
 
 [build-system]
