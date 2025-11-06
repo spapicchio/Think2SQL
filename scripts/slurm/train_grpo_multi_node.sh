@@ -162,14 +162,22 @@ accelerate launch \
 
 
 if [[ -n "${WORK}" ]]; then
-    echo "Moving trained model into WORK: ${WORK}"
+    
+    echo "Moving file into WORK: ${WORK}"
     # Strip BASE_WORK prefix to keep relative structure
+    # Moving trained model
     REL_PATH="${OUTPUT_DIR#${BASE_WORK}/}"
     DEST="${WORK}/${REL_PATH}"
-    log_section "From '${OUTPUT_DIR}' to '${DEST}'" ${JOB_ID}
-    mkdir -p "${DEST}"
-    cp -r "$OUTPUT_DIR" "$DEST"
-
+    cp_files "${DEST}" "${OUTPUT_DIR}" "${JOB_ID}"
+    # Moving wandb logs
+    REL_PATH_WANDB="${WANDB_DIR#${BASE_WORK}/}"
+    DEST_WANDB="${WORK}/${REL_PATH_WANDB}"
+    cp_files "${DEST_WANDB}" "${WANDB_DIR}" "${JOB_ID}"
+    # Moving tmux log specified in submit and log!
+    SLURM_LOG="${BASE_WORK}/logs/rl/${SLURM_JOB_NAME}-${JOB_ID}.out"
+    REL_PATH_LOGS="${SLURM_LOG#${BASE_WORK}/}"
+    DEST_LOGS="${WORK}/${REL_PATH_LOGS}"
+    cp_files "${DEST_LOGS}" "${SLURM_LOG}" "${JOB_ID}"
 else
     echo "WORK is not set; skipping move"
 fi

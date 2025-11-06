@@ -160,3 +160,12 @@ function setup_idris {
   export WORLD_SIZE=$((WORLD_SIZE - SLURM_GPUS_PER_NODE)) # exclude vLLM node
   export NUM_NODES=$((SLURM_NNODES - 1)) # exclude vLLM node
 }
+
+function cp_files {
+  local dest="$1"
+  local src_file="$2"
+  local job_id="$3"
+  log_section "From '${dest}' to '${src_file}'" "${job_id}"
+  mkdir -p "${dest}"
+  cp -r "${src_file}" "${dest}"
+}

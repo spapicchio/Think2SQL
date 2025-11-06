@@ -157,16 +157,22 @@ srun \
 
 # The chat template needs to be specified only for DeepSeek models
 #    --chat_template "{% if not add_generation_prompt is defined %}{% set add_generation_prompt = false %}{% endif %}{% set ns = namespace(is_first=false, is_tool=false, is_output_first=true, system_prompt='') %}{%- for message in messages %}{%- if message['role'] == 'system' %}{% set ns.system_prompt = message['content'] %}{%- endif %}{%- endfor %}{{bos_token}}{{ns.system_prompt}}{%- for message in messages %}{%- if message['role'] == 'user' %}{%- set ns.is_tool = false -%}{{'<｜User｜>' + message['content']}}{%- endif %}{%- if message['role'] == 'assistant' and message['content'] is none %}{%- set ns.is_tool = false -%}{%- for tool in message['tool_calls']%}{%- if not ns.is_first %}{{'<｜Assistant｜><｜tool▁calls▁begin｜><｜tool▁call▁begin｜>' + tool['type'] + '<｜tool▁sep｜>' + tool['function']['name'] + '\\n' + '```json' + '\\n' + tool['function']['arguments'] + '\\n' + '```' + '<｜tool▁call▁end｜>'}}{%- set ns.is_first = true -%}{%- else %}{{'\\n' + '<｜tool▁call▁begin｜>' + tool['type'] + '<｜tool▁sep｜>' + tool['function']['name'] + '\\n' + '```json' + '\\n' + tool['function']['arguments'] + '\\n' + '```' + '<｜tool▁call▁end｜>'}}{{'<｜tool▁calls▁end｜><｜end▁of▁sentence｜>'}}{%- endif %}{%- endfor %}{%- endif %}{%- if message['role'] == 'assistant' and message['content'] is not none %}{%- if ns.is_tool %}{{'<｜tool▁outputs▁end｜>' + message['content'] + '<｜end▁of▁sentence｜>'}}{%- set ns.is_tool = false -%}{%- else %}{% set content = message['content'] %}{{'<｜Assistant｜>' + content + '<｜end▁of▁sentence｜>'}}{%- endif %}{%- endif %}{%- if message['role'] == 'tool' %}{%- set ns.is_tool = true -%}{%- if ns.is_output_first %}{{'<｜tool▁outputs▁begin｜><｜tool▁output▁begin｜>' + message['content'] + '<｜tool▁output▁end｜>'}}{%- set ns.is_output_first = false %}{%- else %}{{'\\n<｜tool▁output▁begin｜>' + message['content'] + '<｜tool▁output▁end｜>'}}{%- endif %}{%- endif %}{%- endfor -%}{% if ns.is_tool %}{{'<｜tool▁outputs▁end｜>'}}{% endif %}{% if add_generation_prompt and not ns.is_tool %}{{'<｜Assistant｜>'}}{% endif %}"
-
-if [[ -n "${WORK}" ]]; then
-    echo "Moving trained model into WORK: ${WORK}"
+if [[ -n "${WORK}" ]]; then    
+    echo "Moving file into WORK: ${WORK}"
     # Strip BASE_WORK prefix to keep relative structure
+    # Moving trained model
     REL_PATH="${OUTPUT_DIR#${BASE_WORK}/}"
     DEST="${WORK}/${REL_PATH}"
-    log_section "From '${OUTPUT_DIR}' to '${DEST}'" ${JOB_ID}
-    mkdir -p "${DEST}"
-    cp -r "$OUTPUT_DIR" "$DEST"
-
+    cp_files "${DEST}" "${OUTPUT_DIR}" "${JOB_ID}"
+    # Moving wandb logs
+    REL_PATH_WANDB="${WANDB_DIR#${BASE_WORK}/}"
+    DEST_WANDB="${WORK}/${REL_PATH_WANDB}"
+    cp_files "${DEST_WANDB}" "${WANDB_DIR}" "${JOB_ID}"
+    # Moving tmux log specified in submit and log!
+    SLURM_LOG="${BASE_WORK}/logs/rl/${SLURM_JOB_NAME}-${JOB_ID}.out"
+    REL_PATH_LOGS="${SLURM_LOG#${BASE_WORK}/}"
+    DEST_LOGS="${WORK}/${REL_PATH_LOGS}"
+    cp_files "${DEST_LOGS}" "${SLURM_LOG}" "${JOB_ID}"
 else
     echo "WORK is not set; skipping move"
 fi
