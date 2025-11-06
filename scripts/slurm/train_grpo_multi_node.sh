@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH -A vno@h100
 #SBATCH -C h100
-#SBATCH --job-name=rl-exp-30
+#SBATCH --job-name=rl-4B-ex
 #SBATCH --ntasks-per-node=1
 #SBATCH --gpus-per-node=4
 #SBATCH --output=./logs/rl/%x-%j.out
@@ -125,10 +125,10 @@ TRAINING_PARAMS=(
         --output_dir "${OUTPUT_DIR}"
 
         --logging_dir "${LOGGING_DIR_TENSORBOARD}"
-        --run_name "${JOB_NAME}"
+        --run_name "${JOB_ID}"
         --log_completions True
         --num_completions_to_print 0
-        --vllm_server_host "${VLLM_SERVER_HOST}"
+        --vllm_server_host "${VLLM_NODE}"
         --vllm_server_port "${VLLM_SERVER_PORT}"
         --save_steps 5
         --save_total_limit 1
