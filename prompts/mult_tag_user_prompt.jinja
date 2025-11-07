@@ -1,20 +1,16 @@
 Answer the following question with the SQL code. Use the piece of evidence and base your answer on the database schema.
 Given the question, the evidence and the database schema, return in the
 <answer> tags only the SQL script that addresses the question.
-    Use
-    <reasoning>,
-        <tables>,
-            <columns>, and
-                <checks> tags to guide you to the solution.
+Use <reasoning>, <tables>, <columns>, and <checks> tags to guide you to the solution.
 
-                    Database Engine:
-                    SQLite
+Database Engine:
+SQLite
 
-                    Question:
-                    {{ question }}
+Question:
+{{ question }}
 
-                    Evidence:
-                    {{ evidence }}
+Evidence:
+{{ evidence }}
 
-                    Database Schema:
-                    {{ schema }}
+Database Schema:
+{{ schema }}
