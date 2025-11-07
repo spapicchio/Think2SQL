@@ -1,5 +1,6 @@
 import re
 from collections import defaultdict
+from functools import lru_cache
 
 import duckdb
 
@@ -33,6 +34,7 @@ def check_crud_sql(query):
     return query
 
 
+@lru_cache(maxsize=512)
 def extract_tbl2col_from_db(sqlite_path):
     con = duckdb.connect()
     con.execute(f"ATTACH '{sqlite_path}' AS mydb (TYPE SQLITE)")
@@ -50,6 +52,7 @@ def extract_tbl2col_from_db(sqlite_path):
     return schema_map
 
 
+@lru_cache(maxsize=512)
 def explain_query(sqlite_path, query):
     con = duckdb.connect()
     con.execute(f"ATTACH '{sqlite_path}' AS mydb (TYPE SQLITE)")

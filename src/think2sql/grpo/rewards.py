@@ -30,6 +30,52 @@ def _parse_model_response(completion) -> str | list[str]:
         return completion
 
 
+def reward_selected_tables(
+        completions: list[dict],
+        tbls_in_query: list[list[str]],
+        db_id: list[str],
+        *args,
+        **kwargs,
+) -> list[float]:
+    """Calculate the recall of the tables in the completions"""
+    model_predictions = [_parse_model_response(completion) for completion in completions]
+    rewards = []
+    for model_pred, tbls in zip(model_predictions, tbls_in_query):
+        predicted_tbls = extract_from_completion_with('tables', model_pred)
+        if predicted_tbls is None:
+            rewards.append(0.0)
+            continue
+        predicted_tbls_set = {t.strip().lower() for t in predicted_tbls.split(',')}
+        true_tbls_set = {t.strip().lower() for t in tbls}
+        intersection = predicted_tbls_set.intersection(true_tbls_set)
+        reward = len(intersection) / len(true_tbls_set) if true_tbls_set else 0.0
+        rewards.append(reward)
+    return rewards
+
+
+def reward_selected_columns(
+        completions: list[dict],
+        cols_in_query: list[list[str]],
+        db_id: list[str],
+        *args,
+        **kwargs,
+) -> list[float]:
+    """Calculate the recall of the cols in the completions"""
+    model_predictions = [_parse_model_response(completion) for completion in completions]
+    rewards = []
+    for model_pred, cols in zip(model_predictions, cols_in_query):
+        predicted_cols = extract_from_completion_with('columns', model_pred)
+        if predicted_cols is None:
+            rewards.append(0.0)
+            continue
+        predicted_cols_set = {t.strip().lower() for t in predicted_cols.split(',')}
+        true_cols_set = {t.strip().lower() for t in cols}
+        intersection = predicted_cols_set.intersection(true_cols_set)
+        reward = len(intersection) / len(true_cols_set) if true_cols_set else 0.0
+        rewards.append(reward)
+    return rewards
+
+
 def nl2sql_reward(
         completions: list[dict],
         target_sql: list[str],
@@ -98,6 +144,27 @@ def format_reward(completions, **kwargs):
     return [1.0 if match else 0.0 for match in matches]
 
 
+def multi_tag_format_reward(completions, **kwargs):
+    """
+    Sparse format reward for:
+      <reasoning>...</reasoning>
+      <tables>...</tables>
+      <columns>...</columns>
+      <checks>...</checks>
+      <answer>...</answer>
+
+    Returns a list of floats in [0,1] with partial credit by component.
+    You can tweak weights to emphasize specific parts.
+    """
+    pattern = r"^<reasoning>\n.*?\n</reasoning>\n<tables>\n.*?\n</tables>\n<columns>\n.*?\n</columns>\n<checks>\n.*?\n</checks>\n<answer>\n.*?\n</answer>$"
+    completion_contents = [completion[0]["content"] for completion in completions]
+    matches = [
+        re.match(pattern, content, re.DOTALL | re.MULTILINE)
+        for content in completion_contents
+    ]
+    return [1.0 if match else 0.0 for match in matches]
+
+
 def _execute_target_and_pred_sql(db_ids: list[str],
                                  target_sqls: list[str],
                                  pred_sqls: list[str],
@@ -119,6 +186,14 @@ def _execute_target_and_pred_sql(db_ids: list[str],
     target_sql_results = executed_queries[: len(target_sqls)]
     model_predictions_results = executed_queries[len(target_sqls):]
     return target_sql_results, model_predictions_results
+
+
+def extract_from_completion_with(tag: str, completion: str) -> str | None:
+    pattern = rf"<{tag}>\n(.*?)\n</{tag}>"
+    match = re.search(pattern, completion, re.DOTALL)
+    if match:
+        return match.group(1).strip()
+    return None
 
 
 def get_reward_funcs(script_args: GRPOScriptArguments, save_in_cache=True) -> list[Callable]:
@@ -144,6 +219,9 @@ def get_reward_funcs(script_args: GRPOScriptArguments, save_in_cache=True) -> li
         "QATCH": qatch_reward_fn,
         "format": format_reward,
         "tag_count": tag_count_reward,
+        "multi_tag_format": multi_tag_format_reward,
+        "table_recall": reward_selected_tables,
+        "column_recall": reward_selected_columns,
     }
 
     reward_funcs = [REWARD_FUNCS_REGISTRY[func] for func in script_args.reward_funcs]
