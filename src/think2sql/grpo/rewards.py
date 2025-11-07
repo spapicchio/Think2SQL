@@ -33,7 +33,6 @@ def _parse_model_response(completion) -> str | list[str]:
 def reward_selected_tables(
         completions: list[dict],
         tbls_in_query: list[list[str]],
-        db_id: list[str],
         *args,
         **kwargs,
 ) -> list[float]:
@@ -45,7 +44,7 @@ def reward_selected_tables(
         if predicted_tbls is None:
             rewards.append(0.0)
             continue
-        predicted_tbls_set = {t.strip().lower() for t in predicted_tbls.split(',')}
+        predicted_tbls_set = {t.strip().lower().replace('`', '') for t in predicted_tbls.split(',')}
         true_tbls_set = {t.strip().lower() for t in tbls}
         intersection = predicted_tbls_set.intersection(true_tbls_set)
         reward = len(intersection) / len(true_tbls_set) if true_tbls_set else 0.0
@@ -56,7 +55,6 @@ def reward_selected_tables(
 def reward_selected_columns(
         completions: list[dict],
         cols_in_query: list[list[str]],
-        db_id: list[str],
         *args,
         **kwargs,
 ) -> list[float]:
@@ -68,7 +66,7 @@ def reward_selected_columns(
         if predicted_cols is None:
             rewards.append(0.0)
             continue
-        predicted_cols_set = {t.strip().lower() for t in predicted_cols.split(',')}
+        predicted_cols_set = {t.strip().lower().replace('`', '') for t in predicted_cols.split(',')}
         true_cols_set = {t.strip().lower() for t in cols}
         intersection = predicted_cols_set.intersection(true_cols_set)
         reward = len(intersection) / len(true_cols_set) if true_cols_set else 0.0
@@ -156,10 +154,17 @@ def multi_tag_format_reward(completions, **kwargs):
     Returns a list of floats in [0,1] with partial credit by component.
     You can tweak weights to emphasize specific parts.
     """
-    pattern = r"^<reasoning>\n.*?\n</reasoning>\n<tables>\n.*?\n</tables>\n<columns>\n.*?\n</columns>\n<checks>\n.*?\n</checks>\n<answer>\n.*?\n</answer>$"
-    completion_contents = [completion[0]["content"] for completion in completions]
+    pattern = re.compile(
+        r"\s*<reasoning>\s*([\s\S]*?)\s*</reasoning>\s*"
+        r"<tables>\s*([\s\S]*?)\s*</tables>\s*"
+        r"<columns>\s*([\s\S]*?)\s*</columns>\s*"
+        r"<checks>\s*([\s\S]*?)\s*</checks>\s*"
+        r"<answer>\s*([\s\S]*?)\s*</answer>\s*\Z",  # \Z = end of string (ignores final \n issues)
+        flags=re.DOTALL | re.MULTILINE | re.IGNORECASE,
+    )
+    completion_contents = [_parse_model_response(completion) for completion in completions]
     matches = [
-        re.match(pattern, content, re.DOTALL | re.MULTILINE)
+        pattern.fullmatch(content.strip())
         for content in completion_contents
     ]
     return [1.0 if match else 0.0 for match in matches]
