@@ -1,9 +1,11 @@
+import multiprocessing as mp
 import os
 import re
-import threading
+import time
 from functools import partial
-from typing import Callable
+from typing import Callable, Any
 
+import torch
 from NL2SQLEvaluator.db_executor_nodes import SQLiteDBExecutor, SqliteCache
 from NL2SQLEvaluator.db_executor_nodes.cache.cache_protocol import OutputTable
 from NL2SQLEvaluator.db_executor_nodes.db_executor_protocol import ExecuteTask, extract_sql_or_same
@@ -14,10 +16,13 @@ from NL2SQLEvaluator.evaluator_nodes.qatch_metrics import QATCHEvaluator
 from think2sql.configs import GRPOScriptArguments
 from think2sql.logger import get_logger
 
-# This is needed to have a different cache for each process
-# when using multiprocessing training
-REGISTRY_REWARD_CACHE = {}
-_lock = threading.Lock()
+TRAINING_GPUS = torch.cuda.device_count()
+AVAILABLE_CPUS = max(1, mp.cpu_count())
+AVAIL_CPU_PER_GPU = AVAILABLE_CPUS // max(1, TRAINING_GPUS)
+
+
+def _read_counter(name: str) -> Any:
+    return globals().get(name, 0)
 
 
 def _parse_model_response(completion) -> str | list[str]:
@@ -37,18 +42,29 @@ def reward_selected_tables(
         **kwargs,
 ) -> list[float]:
     """Calculate the recall of the tables in the completions"""
+    logger = get_logger('REWARD_TABLES')
+    start_time = time.perf_counter()
+    hash_id = hash(start_time)
+    logger.info(
+        f'[REWARD_TABLES][START][{hash_id}] Calculating reward_selected_tables for {len(completions)} completions'
+    )
+
     model_predictions = [_parse_model_response(completion) for completion in completions]
+    assert len(model_predictions) == len(tbls_in_query), "Length mismatch between completions and tables in query"
+
     rewards = []
     for model_pred, tbls in zip(model_predictions, tbls_in_query):
         predicted_tbls = extract_from_completion_with('tables', model_pred)
         if predicted_tbls is None:
             rewards.append(0.0)
             continue
-        predicted_tbls_set = {t.strip().lower().replace('`', '') for t in predicted_tbls.split(',')}
+        predicted_tbls_set = {t.strip().lower().replace('`', '').replace('"', '').replace("'", '')
+                              for t in predicted_tbls.split(',')}
         true_tbls_set = {t.strip().lower() for t in tbls}
         intersection = predicted_tbls_set.intersection(true_tbls_set)
         reward = len(intersection) / len(true_tbls_set) if true_tbls_set else 0.0
         rewards.append(reward)
+    logger.info(f'[REWARD_TABLES][END][{hash_id}] Completed in {time.perf_counter() - start_time:.2f} seconds')
     return rewards
 
 
@@ -59,7 +75,14 @@ def reward_selected_columns(
         **kwargs,
 ) -> list[float]:
     """Calculate the recall of the cols in the completions"""
+    logger = get_logger('REWARD_TABLES')
+    start_time = time.perf_counter()
+    hash_id = hash(start_time)
+    logger.info(
+        f'[REWARD_COLS][START][{hash_id}] Calculating reward_selected_columns for {len(completions)} completions'
+    )
     model_predictions = [_parse_model_response(completion) for completion in completions]
+    assert len(model_predictions) == len(cols_in_query), "Length mismatch between completions and columns in query"
     rewards = []
     for model_pred, cols in zip(model_predictions, cols_in_query):
         predicted_cols = extract_from_completion_with('columns', model_pred)
@@ -71,6 +94,7 @@ def reward_selected_columns(
         intersection = predicted_cols_set.intersection(true_cols_set)
         reward = len(intersection) / len(true_cols_set) if true_cols_set else 0.0
         rewards.append(reward)
+    logger.info(f'[REWARD_COLS][END][{hash_id}] Completed in {time.perf_counter() - start_time:.2f} seconds')
     return rewards
 
 
@@ -80,16 +104,27 @@ def nl2sql_reward(
         db_id: list[str],
         evaluator: EvaluatorProtocol,
         relative_db_base_path: str,
+        SQL_time_taken: list[float],
         *args,
         **kwargs,
 ) -> list[float]:
     # run in parallel predictions and targets
+    logger = get_logger('REWARD_SQLS')
+    start_time = time.perf_counter()
+    hash_id = hash(start_time)
+    logger.info(
+        f'[REWARD_SQLS][START][{hash_id}] Calculating reward_SQL or {len(completions)} completions'
+    )
+
+    start_time = time.perf_counter()
     model_predictions = [_parse_model_response(completion) for completion in completions]
+
     target_sql_results, model_predictions_results = _execute_target_and_pred_sql(
-        db_id,
-        target_sql,
-        model_predictions,
-        relative_db_base_path
+        db_ids=db_id,
+        target_sqls=target_sql,
+        pred_sqls=model_predictions,
+        timeout=SQL_time_taken,
+        relative_db_base_path=relative_db_base_path
     )
     # make evaluation
     tasks = [
@@ -105,7 +140,7 @@ def nl2sql_reward(
         *args,
         **kwargs
     )
-
+    logger.info(f'[REWARD_SQLS][END][{hash_id}] Completed in {time.perf_counter() - start_time:.2f} seconds')
     return scores
 
 
@@ -173,19 +208,29 @@ def multi_tag_format_reward(completions, **kwargs):
 def _execute_target_and_pred_sql(db_ids: list[str],
                                  target_sqls: list[str],
                                  pred_sqls: list[str],
+                                 timeout: list[float],
                                  relative_db_base_path: str):
     db_files = [os.path.join(relative_db_base_path, id_, f"{id_}.sqlite") for id_ in db_ids] * 2
+    timeout = timeout * 2
+    timeout = [min(t + (0.20 * t) + 10, 500) for t in timeout]
     query_to_execute = target_sqls + pred_sqls
 
+    assert (db_files, query_to_execute,
+            timeout), "Mismatched lengths in executing SQL queries. _execute_target_and_pred_sql"
+
+    # for db_file, query, t in zip(db_files, query_to_execute, timeout):
+    #     log_sql.info(f'{db_file}\ntimeout {t:.4f} seconds\nSQL Query:\n{extract_sql_or_same(query)}\n{"-" * 60}')
+
+    num_cpus = min(_read_counter('AVAIL_CPU_PER_GPU'), max(1, len(query_to_execute)))
     tasks = [
-        ExecuteTask(db_files=db_file, queries=[extract_sql_or_same(query)])
-        for db_file, query in zip(db_files, query_to_execute)
+        ExecuteTask(db_files=db_file, queries=[extract_sql_or_same(query)], timeout=t)
+        for db_file, query, t in zip(db_files, query_to_execute, timeout)
     ]
     executed_queries = SQLiteDBExecutor().execute_queries(
         tasks=tasks,
-        timeout=500,
         cache_db=SqliteCache(),
-        cache_db_file='.nl2sql_cache/train_omnisql_cache.sqlite'
+        cache_db_file='.nl2sql_cache/train_omnisql_cache.sqlite',
+        num_cpus=num_cpus,
     )
 
     target_sql_results = executed_queries[: len(target_sqls)]
@@ -202,7 +247,6 @@ def extract_from_completion_with(tag: str, completion: str) -> str | None:
 
 
 def get_reward_funcs(script_args: GRPOScriptArguments, save_in_cache=True) -> list[Callable]:
-    logger = get_logger(__name__)
     execution_accuracy_fn = partial(
         nl2sql_reward,
         relative_db_base_path=script_args.relative_db_base_path,
@@ -230,5 +274,4 @@ def get_reward_funcs(script_args: GRPOScriptArguments, save_in_cache=True) -> li
     }
 
     reward_funcs = [REWARD_FUNCS_REGISTRY[func] for func in script_args.reward_funcs]
-    logger.info(f"loaded reward functions: {script_args.reward_funcs}")
     return reward_funcs
