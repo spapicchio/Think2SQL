@@ -6,6 +6,7 @@ add_sample_rows_strategy: 'inline'  # Available: 'none', 'inline', 'append'
 cache_db_connections_path: '.think2sql_cache'
 target_sql_cache_db_path: '.think2sql_cache/target_cached_query.sqlite'
 pred_sql_cache_db_path: '.think2sql_cache/pred_cached_query.sqlite'
+enable_thinking_mode: 'false'
 # ---------------------  Important params ---------------------
 num_train_epochs: 4
 per_device_train_batch_size: 4 # num_of_generations must be divisible by per_device_train_batch_size

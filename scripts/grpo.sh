@@ -23,7 +23,7 @@ trap cleanup EXIT ERR INT TERM # Clenup is a function to trap and remove the onl
 #JOB_ID='qwen-think4-6e12dc09'
 #export WANDB_RUN_ID='0czrmvbj'
 
- JOB_ID=${MY_SLURM_JOB_ID}
+JOB_ID=${MY_SLURM_JOB_ID}
 
 log_section "JOB_ID = ${JOB_ID}" "${JOB_ID}"
 
@@ -36,22 +36,22 @@ LOGGING_DIR_TENSORBOARD="${BASE_WORK}/.tensorboard_logging/${JOB_ID}/"
 
 # ----------- Custom  Params -----------
 PROMPT_FOLDER="${BASE_WORK}/prompts"
-USER_PROMPT_NAME="base_think_user_prompt.jinja"
-SYSTEM_PROMPT_NAME="base_think_system_prompt.jinja"
+SYSTEM_PROMPT_NAME="base_think_system_multi_tag_prompt.jinja"
+USER_PROMPT_NAME="mult_tag_user_prompt.jinja"
 
 # ----------- Dataset Params -----------
-DATASET_NAME="${BASE_WORK}/data/omnisql/data/train_bird_processed.json"
+DATASET_NAME="${BASE_WORK}/data/omnisql/data/train_bird_with_plan_cols_time.json"
 DB_PATH="${BASE_WORK}/data/omnisql/data/bird/train/train_databases"
 
 # ----------- Training Params -----------
 LOSS_TYPE='dapo'
-REWARD_FUNCS="QATCH format"
-REWARD_WEIGHTS="0.9 0.1"
+REWARD_FUNCS="EX table_recall column_recall multi_tag_format"
+REWARD_WEIGHTS="0.5 0.2 0.2 0.1"
 LEARNING_RATE=1e-6
 NUM_EPOCHS=2
 BS=8
 ACCUMULATION_STEPS=8
-MAX_PROMPT_LENGTH=6000
+MAX_PROMPT_LENGTH=8000
 MAX_LENGTH=4096
 MAX_MODEL_LENGTH=$((MAX_PROMPT_LENGTH + MAX_LENGTH + 1024))
 

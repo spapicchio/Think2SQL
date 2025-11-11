@@ -168,10 +168,15 @@ def tag_count_reward(completions, **kwargs) -> list[float]:
 
 def format_reward(completions, **kwargs):
     """Reward function that checks if the reasoning process is enclosed within <think> and </think> tags, while the final answer is enclosed within <answer> and </answer> tags."""
-    pattern = r"^<think>\n.*?\n</think>\n<answer>\n.*?\n</answer>$"
+    # pattern = r"^<think>\n.*?\n</think>\n<answer>\n.*?\n</answer>$"
+    pattern = re.compile(
+        r"\s*<reasoning>\s*([\s\S]*?)\s*</reasoning>\s*"
+        r"<answer>\s*([\s\S]*?)\s*</answer>\s*\Z",  # \Z = end of string (ignores final \n issues)
+        flags=re.DOTALL | re.MULTILINE | re.IGNORECASE,
+    )
     completion_contents = [completion[0]["content"] for completion in completions]
     matches = [
-        re.match(pattern, content, re.DOTALL | re.MULTILINE)
+        pattern.fullmatch(content.strip())
         for content in completion_contents
     ]
     return [1.0 if match else 0.0 for match in matches]

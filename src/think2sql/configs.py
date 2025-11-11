@@ -179,6 +179,11 @@ class GRPOConfig(trl.GRPOConfig):
         metadata={"help": "The group to store runs under."},
     )
 
+    enable_thinking_mode: str | None = field(
+        default=None,
+        metadata={"help": "Whether to enable the thinking model for reasoning models."},
+    )
+
     def __post_init__(self):
         super().__post_init__()
         if isinstance(self.sync_ref_model, str):
@@ -190,6 +195,22 @@ class GRPOConfig(trl.GRPOConfig):
                 raise ValueError(
                     "`sync_ref_model` must be a boolean or a string representing a boolean ('true', 'false', '1', '0', 'yes', 'no')"
                 )
+        if self.enable_thinking_mode is not None:
+            if isinstance(self.enable_thinking_mode, str):
+                if self.enable_thinking_mode.lower() in ("true", "1", "yes"):
+                    self.enable_thinking_mode = True
+                elif self.enable_thinking_mode.lower() in ("false", "0", "no"):
+                    self.enable_thinking_mode = False
+                else:
+                    raise ValueError(
+                        "`enable_thinking_model` must be a boolean or a string representing a boolean ('true', 'false', '1', '0', 'yes', 'no')"
+                    )
+            else:
+                raise ValueError(
+                    "`enable_thinking_model` must be a boolean or a string representing a boolean ('true', 'false', '1', '0', 'yes', 'no')"
+                )
+
+            self.chat_template_kwargs = {"enable_thinking": self.enable_thinking_mode}
 
 
 @dataclass

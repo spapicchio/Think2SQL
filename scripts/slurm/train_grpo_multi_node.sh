@@ -59,7 +59,7 @@ USER_PROMPT_NAME="base_think_user_prompt.jinja"
 SYSTEM_PROMPT_NAME="base_think_system_prompt.jinja"
 
 # ----------- Dataset Params -----------
-DATASET_NAME="data/train_bird_processed.json"
+DATASET_NAME="data/train_bird_with_plan_cols_time.json"
 DB_PATH="data/bird/train/train_databases"
 
 
@@ -71,7 +71,7 @@ LEARNING_RATE=1e-6
 NUM_EPOCHS=2
 BS=8
 ACCUMULATION_STEPS=8
-MAX_PROMPT_LENGTH=6000
+MAX_PROMPT_LENGTH=8000
 MAX_LENGTH=4096
 MAX_MODEL_LENGTH=$((MAX_PROMPT_LENGTH + MAX_LENGTH + 1024))
 
