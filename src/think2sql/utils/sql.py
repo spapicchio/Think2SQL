@@ -4,6 +4,10 @@ from functools import lru_cache
 
 import duckdb
 
+from think2sql.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 def get_sql_from_generation(generation: str):
     # extract with regex everything is between <answer> and </answer>
@@ -90,3 +94,44 @@ def extract_cols_from_plan(plan_node, schema_map):
     for child in plan_node.get("children", []):
         cols_found.update(extract_cols_from_plan(child, schema_map))
     return cols_found
+
+
+def extract_tables_and_columns_with_sqlglot(query, schema_map: dict, is_recursive=False) -> dict:
+    import sqlglot
+    from sqlglot import exp
+    output = {'tables': set(), 'columns': set()}
+    tables_in_schema = set(v.lower() for v in schema_map.keys())
+    try:
+        parsed = sqlglot.parse_one(query, dialect='sqlite')
+        # Build a map alias -> table name
+        alias_map = {}
+        for t in parsed.find_all(exp.Table):
+            if t.name in tables_in_schema:
+                output['tables'].add(t.name)
+                if t.alias:
+                    alias_map[t.alias] = t.name
+        # extract columns
+        for col in parsed.find_all(exp.Column):
+            # If there’s a table qualifier, use it
+            table = col.table or ""
+            if table == '' and col.parent_select and not is_recursive:
+                query_parent = str(col.parent_select)
+                output_ = extract_tables_and_columns_with_sqlglot(query_parent, schema_map, is_recursive=True)
+                table = output_['tables'].pop() if output_['tables'] else ""
+                if table == '':
+                    # get all possible columns from tables in the
+                    for tbl, possible_cols in schema_map.items():
+                        if col.name in possible_cols:
+                            table = tbl
+                            break
+            name = col.name
+            resolved_table = alias_map.get(table, table) if table else ""
+            cols_in_table = schema_map.get(resolved_table, [])
+            cols_in_table = set(c.lower() for c in cols_in_table)
+            if name in cols_in_table:
+                qualified = f"{resolved_table}.{name}" if table else name
+                output['columns'].add(qualified)
+        return output
+    except Exception as e:
+        logger.warning(f'SQLglot not able to parse the query: {e}')
+        return output

@@ -11,7 +11,7 @@ from think2sql.utils.sql import (
     extract_tbl2col_from_db,
     explain_query,
     extract_tables_from_plan,
-    extract_cols_from_plan,
+    extract_cols_from_plan, extract_tables_and_columns_with_sqlglot,
 )
 
 
@@ -176,6 +176,11 @@ def test_real_plan_cte_window_union(sqlite_db_complex):
     }
     assert expected_cols_subset == cols
 
+    # try to use sqlglot as well:
+    output = extract_tables_and_columns_with_sqlglot(query, schema_map)
+    assert expected_cols_subset == output["columns"]
+    assert {"customers", "orders", "order_items"} == output["tables"]
+
 
 # ---------------------------------------------------------
 # 2) EXISTS (correlated subquery) + predicate on aggregate
@@ -203,6 +208,11 @@ def test_real_plan_exists_correlated(sqlite_db_complex):
     # EXISTS should bring in orders
     assert {"customers", "orders"} == tables
     assert {"customers.id", "customers.name", "orders.customer_id", "orders.total"} == cols
+
+    # try to use sqlglot as well:
+    output = extract_tables_and_columns_with_sqlglot(query, schema_map)
+    assert {"customers", "orders"} == output["tables"]
+    assert {"customers.id", "customers.name", "orders.customer_id", "orders.total"} == output["columns"]
 
 
 # ---------------------------------------------------------
@@ -233,6 +243,9 @@ def test_real_plan_distinct_limit_quoted(sqlite_db_complex):
     # ---------------------------------------------------------
     # 4) GROUP BY + HAVING (with COUNT/DISTINCT) + LEFT JOIN
     # ---------------------------------------------------------
+    output = extract_tables_and_columns_with_sqlglot(query, schema_map)
+    assert {"products", "categories"} == output["tables"]
+    assert {"products.name", "products.category_id", "categories.id", "categories.name"} == output["columns"]
 
 
 def test_real_plan_groupby_having(sqlite_db_complex):
@@ -257,6 +270,10 @@ def test_real_plan_groupby_having(sqlite_db_complex):
     assert {"customers", "orders"} == tables
     assert {"customers.city", "orders.id", "orders.customer_id", 'customers.id'} == cols
 
+    output = extract_tables_and_columns_with_sqlglot(query, schema_map)
+    assert {"customers", "orders"} == output["tables"]
+    assert {"customers.city", "orders.id", "orders.customer_id", 'customers.id'}
+
 
 # ---------------------------------------------------------
 # 5) CROSS JOIN + scalar subquery in SELECT-list
@@ -265,8 +282,7 @@ def test_real_plan_cross_join_scalar_subquery(sqlite_db_complex):
     schema_map = extract_tbl2col_from_db(sqlite_db_complex)
 
     query = """
-            SELECT p.name,
-                   (SELECT COUNT(price) FROM order_items) AS avg_price
+            SELECT p.name, (SELECT COUNT(price) FROM order_items) AS avg_price
             FROM products p
                      CROSS JOIN (SELECT 1 AS one) t
             ORDER BY p.name \
@@ -281,3 +297,26 @@ def test_real_plan_cross_join_scalar_subquery(sqlite_db_complex):
 
     assert {"products", "order_items"} == tables
     assert {"products.name", "order_items.price"} == cols
+
+    output = extract_tables_and_columns_with_sqlglot(query, schema_map)
+    assert {"products", "order_items"} == output["tables"]
+    assert {"products.name", "order_items.price"} == output["columns"]
+
+
+def test_special_case():
+    sqlite_db_complex = "data/omnisql/data/bird/train/train_databases/movie_platform/movie_platform.sqlite"
+    query = "SELECT movie_title, movie_release_year FROM movies ORDER BY LENGTH(movie_popularity) DESC LIMIT 1"
+    schema_map = extract_tbl2col_from_db(sqlite_db_complex)
+    #
+    # plan = _normalize_plan(explain_query(sqlite_db_complex, query))
+    #
+    # tables = set()
+    # cols = set()
+    # for node in plan:
+    #     tables |= extract_tables_from_plan(node, possible_tbls=set(schema_map.keys()))
+    #     cols |= extract_cols_from_plan(node, schema_map)
+    # assert {"movies"} == tables
+    # assert {"movies.movie_title", "movies.movie_release_year", "movies.movie_popularity"} == cols
+    output = extract_tables_and_columns_with_sqlglot(query, schema_map)
+    assert {"movies"} == output["tables"]
+    assert {"movies.movie_title", "movies.movie_release_year", "movies.movie_popularity"} == output["columns"]
