@@ -187,11 +187,7 @@ class LiteLLMPredictor:
             # rpm=kwargs.get('rpm', None),
             drop_params=True,
             reasoning_effort='high' if 'gpt' in model_name.lower() else None,
-            max_workers=120,
-            httpx_client_params={
-                "limits": {"max_connections": 200, "max_keepalive_connections": 100},
-                "timeout": 60,
-            },
+            max_workers=200,
             chat_template_kwargs={"enable_thinking": kwargs.get('enable_thinking_mode', False)}
             # stream=True if sampling_params.n > 1 or sampling_params.max_tokens > 15000 else False,
         )
