@@ -1,16 +1,42 @@
 #!/bin/bash
-#SBATCH --job-name=eval-qwen3-8-Instruct
+#!/bin/bash
+#SBATCH -A vno@h100
+#SBATCH -C h100
+#SBATCH --job-name=eval-4b-instruct-qatch
+#SBATCH --ntasks-per-node=1
+#SBATCH --gpus-per-node=4
+#SBATCH --output=./logs/rl/%x-%j.out
+#SBATCH --nodes=2
+#SBATCH --qos=qos_gpu_h100-t3
+#SBATCH --time=20:00:00
+#SBATCH --cpus-per-task=100
+#SBATCH --signal=B:USR1@30
+#SBATCH --open-mode=append
 
 # --- robust shell settings ---
 set -Eeuo pipefail
 
 # --- env & utils ---
+if [[ -n "${SLURM_JOB_ID:-}" ]]; then
+  echo "Running inside SLURM job ${SLURM_JOB_ID}"
+  export BASE_WORK="${SCRATCH}/Think2SQL"
+  cd $BASE_WORK
+  export HF_HOME="${SCRATCH}/hf_cache"
+  source "${BASE_WORK}/scripts/utils/slurm_job_requeue.sh"
+fi
+
 source "${BASE_WORK}/.env"
 source "${BASE_WORK}/scripts/utils/utils.sh"
-source "${BASE_WORK}/scripts/utils/utils_clenup_vllm_if_crash.sh"
+
+if [[ -n "${SLURM_JOB_ID:-}" ]]; then
+  source "${BASE_WORK}/scripts/utils/slurm_job_requeue.sh"
+  setup_idris
+else
+  source "${BASE_WORK}/scripts/utils/utils_clenup_vllm_if_crash.sh"
+  export CUDA_VISIBLE_DEVICES='4,5'
+fi
 
 
-export CUDA_VISIBLE_DEVICES='4,5'
 NUM_GPUS=$(python -c "import torch; print(torch.cuda.device_count())")
 echo  "Using ${NUM_GPUS} GPUs: ${CUDA_VISIBLE_DEVICES}"
 
@@ -34,7 +60,7 @@ SYSTEM_PROMPT_NAME=''
 # ----------- Configuration -----------
 export OMP_NUM_THREADS=50
 
-# label, dataset, db_path, id_json (4 fields per tuple)
+# label, dataset, db_path
 datasets=(
   "Bird-dev"          "data/omnisql/data/processed/dev_bird_processed_with_plan_cols_time.json"                   "data/omnisql/data/bird/dev_20240627/dev_databases"
   "SPIDER-test"       "data/omnisql/data/processed/test_spider_processed_with_plan_cols_time.json"                "data/omnisql/data/spider/test_database"
