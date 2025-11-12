@@ -4,11 +4,11 @@
 #SBATCH -C h100
 #SBATCH --job-name=eval-4b-instruct-qatch
 #SBATCH --ntasks-per-node=1
-#SBATCH --gpus-per-node=4
+#SBATCH --gpus-per-node=1
 #SBATCH --output=./logs/rl/%x-%j.out
-#SBATCH --nodes=2
-#SBATCH --qos=qos_gpu_h100-t3
-#SBATCH --time=20:00:00
+#SBATCH --nodes=1
+#SBATCH --qos=qos_gpu_h100-dev
+#SBATCH --time=01:00:00
 #SBATCH --cpus-per-task=100
 #SBATCH --signal=B:USR1@30
 #SBATCH --open-mode=append
@@ -23,6 +23,8 @@ if [[ -n "${SLURM_JOB_ID:-}" ]]; then
   cd $BASE_WORK
   export HF_HOME="${SCRATCH}/hf_cache"
   source "${BASE_WORK}/scripts/utils/slurm_job_requeue.sh"
+  uv sync --frozen
+  source "${BASE_WORK}/.venv/bin/activate"
 fi
 
 source "${BASE_WORK}/.env"
