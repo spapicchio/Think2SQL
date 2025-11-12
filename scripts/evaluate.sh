@@ -38,7 +38,7 @@ fi
 
 
 NUM_GPUS=$(python -c "import torch; print(torch.cuda.device_count())")
-echo  "Using ${NUM_GPUS} GPUs: ${CUDA_VISIBLE_DEVICES}"
+echo  "Using ${NUM_GPUS} GPUs."
 
 DATA_PARALLEL_SIZE=$NUM_GPUS
 TENSOR_PARALLEL_SIZE=1
