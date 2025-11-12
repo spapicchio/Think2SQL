@@ -26,7 +26,7 @@ export HF_HOME='${SCRATCH}/hf_cache'
 
 source "${BASE_WORK}/.env"
 source "${BASE_WORK}/scripts/utils/utils.sh"
-trap job_requeue USR1  # Function in utils to requeue job on signal
+source "${BASE_WORK}/scripts/utils/slurm_job_requeue.sh"
 
 setup_idris  # function in utils.sh
 

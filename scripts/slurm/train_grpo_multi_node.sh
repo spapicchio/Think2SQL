@@ -22,11 +22,11 @@ nvidia-smi
 
 export BASE_WORK="${SCRATCH}/Think2SQL"
 cd $BASE_WORK
-export HF_HOME='${SCRATCH}/hf_cache'
+export HF_HOME="${SCRATCH}/hf_cache"
 
 source "${BASE_WORK}/.env"
 source "${BASE_WORK}/scripts/utils/utils.sh"
-trap job_requeue USR1  # Function in utils to requeue job on signal
+source "${BASE_WORK}/scripts/utils/slurm_job_requeue.sh"
 
 setup_idris  # function in utils.sh
 
@@ -59,14 +59,14 @@ USER_PROMPT_NAME="base_think_user_prompt.jinja"
 SYSTEM_PROMPT_NAME="base_think_system_prompt.jinja"
 
 # ----------- Dataset Params -----------
-DATASET_NAME="data/train_bird_with_plan_cols_time.json"
-DB_PATH="data/bird/train/train_databases"
+DATASET_NAME="${BASE_WORK}/data/train_bird_with_plan_cols_time.json"
+DB_PATH="${BASE_WORK}/data/bird/train/train_databases"
 
 
 # ----------- Training Params -----------
 LOSS_TYPE='dapo'
 REWARD_FUNCS="EX format"
-REWARD_WEIGHTS="0.9 0.1"
+REWARD_WEIGHTS="0.95 0.05"
 LEARNING_RATE=1e-6
 NUM_EPOCHS=2
 BS=8
@@ -84,7 +84,7 @@ RL_MODEL_NAME="bs${TOTAL_BATCH_SIZE}_ml${MAX_LENGTH}_gen${NUM_GENERATIONS}_${JOB
 log_section "RL_MODEL_NAME: ${RL_MODEL_NAME}" "${JOB_ID}"
 
 MODEL_BASE='Qwen3-4B-Instruct-2507'
-MODEL_BASE_PATH="Qwen/${MODEL_BASE}"
+MODEL_BASE_PATH="Qwen/Qwen3-4B-Instruct-2507"
 
 OUTPUT_DIR="${BASE_WORK}/model_trained/grpo/${MODEL_BASE}/${LOSS_TYPE}/${RL_MODEL_NAME}"
 mkdir -p "${OUTPUT_DIR}"

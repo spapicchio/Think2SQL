@@ -33,9 +33,10 @@ launch_vllm() {
   local gpumemory="${7:-0.8}"
   local max_model_length="${8:-2048}"
   local max_num_seqs="${9:-120}"
-  local max_num_batched_tokens=32000
 
+  echo "[LAUNCH VLLM] model=${model_name}, host=${host}, port=${port}, devices=${devices}, dps=${dps}, tps=${tps}, gpumemory=${gpumemory}, max_model_length=${max_model_length}, max_num_seqs=${max_num_seqs}"
   #PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
+
   local launcher=(
     vllm serve "${model_name}"
     --port "${port}"
@@ -48,7 +49,6 @@ launch_vllm() {
     --disable-custom-all-reduce
     --max-model-len "${max_model_length}"
     --max-num-seqs "${max_num_seqs}"
-    --max-num-batched-tokens "${max_num_batched_tokens}"
   )
 
   CUDA_VISIBLE_DEVICES=${devices} \
@@ -97,46 +97,6 @@ launch_trl_vllm() {
     export VLLM_PGID
     echo "vLLM PID: $VLLM_PID (PGID: $VLLM_PGID)"
   fi
-}
-
-# kill vLLM on exit or error
-cleanup() {
-  local code=$?
-  echo "[CLEANUP] exit code: $code"
-  # kill by saved PID / process group if available
-  if [[ -n "${VLLM_PID:-}" ]] && ps -p "$VLLM_PID" >/dev/null 2>&1; then
-    # kill the whole process group (covers workers spawned by the server)
-    if [[ -n "${VLLM_PGID:-}" ]]; then
-      kill -TERM "-${VLLM_PGID}" 2>/dev/null || true
-      sleep 1
-      kill -KILL "-${VLLM_PGID}" 2>/dev/null || true
-    else
-      kill -TERM "${VLLM_PID}" 2>/dev/null || true
-      sleep 1
-      kill -KILL "${VLLM_PID}" 2>/dev/null || true
-    fi
-  fi
-  # final safety: free the port if something else is still listening
-  if command -v lsof >/dev/null 2>&1; then
-    PID_ON_PORT=$(lsof -t -iTCP:"${VLLM_SERVER_PORT:-0}" -sTCP:LISTEN 2>/dev/null || true)
-    if [[ -n "${PID_ON_PORT:-}" ]]; then
-      PGID_ON_PORT=$(ps -o pgid= "${PID_ON_PORT}" | tr -d ' ' || true)
-      [[ -n "${PGID_ON_PORT:-}" ]] && kill -TERM "-${PGID_ON_PORT}" 2>/dev/null || kill -TERM "${PID_ON_PORT}" 2>/dev/null || true
-      sleep 1
-      [[ -n "${PGID_ON_PORT:-}" ]] && kill -KILL "-${PGID_ON_PORT}" 2>/dev/null || kill -KILL "${PID_ON_PORT}" 2>/dev/null || true
-    fi
-  fi
-  # don’t fail the trap
-  return $code
-}
-
-# Requeueing
-function job_requeue {
-  local job_name="${SLURM_JOB_NAME}-${SLURM_JOB_ID}"
-  msg="BASH - trapping signal USR1 - requeueing $job_name"
-  log_section "$msg" "$job_name"
-  date
-  scontrol requeue "$SLURM_JOBID"
 }
 
 function setup_idris {

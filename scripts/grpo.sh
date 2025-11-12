@@ -14,9 +14,7 @@ set -Eeuo pipefail
 
 source "${BASE_WORK}/.env"
 source "${BASE_WORK}/scripts/utils/utils.sh"
-trap cleanup EXIT ERR INT TERM # Clenup is a function to trap and remove the online VLLM
-
-
+source "${BASE_WORK}/scripts/utils/utils_clenup_vllm_if_crash.sh"
 
 # If one job crash and you want to start from it again,
 # set the JOB_ID to the one you want to resume from
