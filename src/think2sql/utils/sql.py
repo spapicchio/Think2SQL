@@ -1,26 +1,29 @@
+import json
 import re
 from collections import defaultdict
 from functools import lru_cache
 
 import duckdb
+import sqlglot
 
 from think2sql.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-def get_sql_from_generation(generation: str):
-    # extract with regex everything is between <answer> and </answer>
-    matches = re.findall(r"<answer>(.*?)</answer>", generation, re.DOTALL)
-    if matches:
-        # if matches found, return the last one without ```sql and ```
-        return matches[-1].replace("```", "").replace("sql", "").strip()
-    else:
-        # if no matches found, extract everything between ```sql and ```
-        matches = re.findall(r"```sql(.*?)```", generation, re.DOTALL)
-        # if matches found, return the last one without ```sql and ```
-        # otherwise return the original generation
-        return matches[-1].strip() if matches else generation
+def _to_duckdb_sql(query: str) -> str:
+    # Best: let sqlglot rewrite SQLite -> DuckDB & quote identifiers properly
+    try:
+        return sqlglot.transpile(
+            query,
+            read="sqlite",
+            write="duckdb",
+            identify=True,  # force quoting of identifiers when needed
+            pretty=False
+        )[0]
+    except Exception:
+        # Fallback: convert MySQL-style backticks to ANSI double quotes
+        return re.sub(r"`([^`]+)`", r'"\1"', query)
 
 
 def check_crud_sql(query):
@@ -57,10 +60,11 @@ def extract_tbl2col_from_db(sqlite_path):
 
 
 @lru_cache(maxsize=512)
-def explain_query(sqlite_path, query):
+def explain_query_duck_db(sqlite_path, query):
     con = duckdb.connect()
     con.execute(f"ATTACH '{sqlite_path}' AS mydb (TYPE SQLITE)")
     con.execute("SET search_path = mydb")
+    query = _to_duckdb_sql(query)
     plan_json = con.execute(f"EXPLAIN (FORMAT JSON) {query}").fetchone()[1]
     return plan_json
 
@@ -94,6 +98,23 @@ def extract_cols_from_plan(plan_node, schema_map):
     for child in plan_node.get("children", []):
         cols_found.update(extract_cols_from_plan(child, schema_map))
     return cols_found
+
+
+def extract_tables_and_columns_with_duckdb(query, schema_map: dict, sqlite_path) -> dict:
+    output = {'tables': set(), 'columns': set()}
+    tables_in_schema = set(v.lower() for v in schema_map.keys())
+    try:
+        plan_json = explain_query_duck_db(sqlite_path, query)
+        plan_json = json.loads(plan_json)
+        # extract tables
+        for node in plan_json:
+            output['tables'].update(extract_tables_from_plan(node, possible_tbls=tables_in_schema))
+            output['columns'].update(extract_cols_from_plan(node, schema_map))
+
+        return output
+    except Exception as e:
+        logger.warning(f'DuckDB not able to parse the query: {e}')
+        return output
 
 
 def extract_tables_and_columns_with_sqlglot(query, schema_map: dict, is_recursive=False) -> dict:

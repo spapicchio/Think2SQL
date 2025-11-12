@@ -115,7 +115,6 @@ class Think2SQLTrainer:
             self.logger.info("***** Example *****")
             self.logger.info(f"Example {i} of the processed dataset")
             self.logger.info(f"{dataset[i]['prompt']}")
-            self.logger.info("***** Example *****")
 
         self.logger.info(
             f"Process dataset with user/system/assistant messages "

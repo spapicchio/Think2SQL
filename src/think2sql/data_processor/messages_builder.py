@@ -9,6 +9,9 @@ def build_messages(
         assistant_response_col_name: str | None = None,
 ):
     prompt = []
+    if 'evidence' not in row:
+        row['evidence'] = ''
+
     if system_prompt_name:
         system_prompt = _render_prompt(system_prompt_name, prompt_folder, **row)
         prompt.append(

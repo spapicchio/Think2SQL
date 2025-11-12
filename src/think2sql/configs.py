@@ -7,6 +7,7 @@ import trl
 @dataclass
 class DatasetConfig:
     """Configuration for a dataset in a mixture."""
+
     id: str
     config: Optional[str] = None
     split: str = "train"
@@ -52,52 +53,56 @@ class SFTScriptArguments(trl.ScriptArguments):
 
     # Override the dataset_name to make it optional
     dataset_name: Optional[str] = field(
-        default='simone-papicchio/bird',
-        metadata={"help": "Dataset name. Can be omitted if using dataset_mixture."}
+        default="simone-papicchio/bird",
+        metadata={"help": "Dataset name. Can be omitted if using dataset_mixture."},
     )
 
     target_sql_col_name: str = field(
-        default='SQL',
-        metadata={"help": "The target SQL column name in the dataset. Default to SQL as in the BIRD dataset."},
+        default="SQL",
+        metadata={
+            "help": "The target SQL column name in the dataset. Default to SQL as in the BIRD dataset."
+        },
     )
 
     relative_db_base_path: str = field(
         default="data/bird/train_databases",
-        metadata={"help": "Relative path to the database files directory"}
+        metadata={"help": "Relative path to the database files directory"},
     )
 
     dataset_test_split: Optional[str] = field(
-        default='dev',
+        default="dev",
         metadata={"help": "The dataset split to use for evaluation."},
     )
     dataset_train_split: Optional[str] = field(
-        default='train',
+        default="train",
         metadata={"help": "The dataset split to use for training."},
     )
 
     dataset_mixture: Optional[DatasetMixtureConfig] = field(
         default=None,
-        metadata={"help": "Configuration for creating dataset mixtures with advanced options like shuffling."},
+        metadata={
+            "help": "Configuration for creating dataset mixtures with advanced options like shuffling."
+        },
     )
 
     assistant_response_col_name: str = field(
         default=None,
-        metadata={"help": "The assistant response column name in the dataset used for SFT."},
-    )
-
-    add_sample_rows_strategy: Optional[str] = field(
-        default='inline',
         metadata={
-            "help": "Strategy to add sample rows to the prompt. Options: 'random', 'similarity', or None."
+            "help": "The assistant response column name in the dataset used for SFT."
         },
     )
 
     def __post_init__(self):
         if self.dataset_name is None and self.dataset_mixture is None:
-            raise ValueError("Either `dataset_name` or `dataset_mixture` must be provided")
+            raise ValueError(
+                "Either `dataset_name` or `dataset_mixture` must be provided"
+            )
 
         if self.dataset_mixture is not None:
-            if not isinstance(self.dataset_mixture, dict) or "datasets" not in self.dataset_mixture:
+            if (
+                    not isinstance(self.dataset_mixture, dict)
+                    or "datasets" not in self.dataset_mixture
+            ):
                 raise ValueError(
                     "dataset_mixture must be a dictionary with a 'datasets' key. "
                     "Expected format: {'datasets': [...], 'seed': int}"
@@ -127,7 +132,11 @@ class SFTScriptArguments(trl.ScriptArguments):
             )
 
             # Check that column names are consistent across all dataset configs
-            columns_sets = [set(dataset.columns) for dataset in datasets_list if dataset.columns is not None]
+            columns_sets = [
+                set(dataset.columns)
+                for dataset in datasets_list
+                if dataset.columns is not None
+            ]
             if columns_sets:
                 first_columns = columns_sets[0]
                 if not all(columns == first_columns for columns in columns_sets):
@@ -147,13 +156,21 @@ class GRPOConfig(trl.GRPOConfig):
         default_factory=lambda: [],
         metadata={"help": "The callbacks to run during training."},
     )
-    chat_template: Optional[str] = field(default=None, metadata={"help": "The chat template to use."})
+    chat_template: Optional[str] = field(
+        default=None, metadata={"help": "The chat template to use."}
+    )
     hub_model_revision: Optional[str] = field(
         default="main", metadata={"help": "The Hub model branch to push the model to."}
     )
-    num_completions_to_print: int = field(default=0, metadata={"help": "Number of completions to print."})
-    overwrite_hub_revision: bool = field(default=False, metadata={"help": "Whether to overwrite the Hub revision."})
-    push_to_hub_revision: bool = field(default=False, metadata={"help": "Whether to push to a Hub revision/branch."})
+    num_completions_to_print: int = field(
+        default=0, metadata={"help": "Number of completions to print."}
+    )
+    overwrite_hub_revision: bool = field(
+        default=False, metadata={"help": "Whether to overwrite the Hub revision."}
+    )
+    push_to_hub_revision: bool = field(
+        default=False, metadata={"help": "Whether to push to a Hub revision/branch."}
+    )
 
     wandb_log_unique_prompts: bool = field(
         default=True,
@@ -162,12 +179,14 @@ class GRPOConfig(trl.GRPOConfig):
         },
     )
     log_level: str = field(
-        default='INFO',
-        metadata={"help": "The logging level to use. Options: 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'."}
+        default="INFO",
+        metadata={
+            "help": "The logging level to use. Options: 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'."
+        },
     )
 
     wandb_entity: Optional[str] = field(
-        default='spapicchio-politecnico-di-torino',
+        default="spapicchio-politecnico-di-torino",
         metadata={"help": "The entity to store runs under."},
     )
     wandb_project: Optional[str] = field(
@@ -218,12 +237,15 @@ class SFTConfig(trl.SFTConfig):
     """
     args for callbacks, benchmarks etc
     """
+
     callbacks: list[str] = field(
         default_factory=lambda: [],
         metadata={"help": "The callbacks to run during training."},
     )
 
-    chat_template: Optional[str] = field(default=None, metadata={"help": "The chat template to use."})
+    chat_template: Optional[str] = field(
+        default=None, metadata={"help": "The chat template to use."}
+    )
 
     system_prompt: Optional[str] = field(
         default=None,
@@ -233,10 +255,14 @@ class SFTConfig(trl.SFTConfig):
         default="main",
         metadata={"help": "The Hub model branch to push the model to."},
     )
-    overwrite_hub_revision: bool = field(default=False, metadata={"help": "Whether to overwrite the Hub revision."})
-    push_to_hub_revision: bool = field(default=False, metadata={"help": "Whether to push to a Hub revision/branch."})
+    overwrite_hub_revision: bool = field(
+        default=False, metadata={"help": "Whether to overwrite the Hub revision."}
+    )
+    push_to_hub_revision: bool = field(
+        default=False, metadata={"help": "Whether to push to a Hub revision/branch."}
+    )
     wandb_entity: Optional[str] = field(
-        default='spapicchio-politecnico-di-torino',
+        default="spapicchio-politecnico-di-torino",
         metadata={"help": "The entity to store runs under."},
     )
     wandb_project: Optional[str] = field(
@@ -251,15 +277,6 @@ class SFTConfig(trl.SFTConfig):
 
 @dataclass
 class EvaluateArgs(SFTScriptArguments):
-    task_name: str = field(
-        default='EX',
-        metadata={"help": "The name of the evaluation task."},
-    )
-    omnisql_file_db_id_json_path: Optional[str] = field(
-        default=None,
-        metadata={"help": "Path to the JSON file mapping database IDs to file paths for OmniSQL."},
-    )
-
     prompt_folder: str = field(
         default="prompts",
         metadata={"help": "The folder where the jinja prompts are stored."},
@@ -267,13 +284,17 @@ class EvaluateArgs(SFTScriptArguments):
 
     user_prompt_name: str = field(
         default="base_think_user_prompt.jinja",
-        metadata={"help": "The user prompt name to use from the chat template. "
-                          "The available prompts are in `prompt_folder`"}
+        metadata={
+            "help": "The user prompt name to use from the chat template. "
+                    "The available prompts are in `prompt_folder`"
+        },
     )
     system_prompt_name: str = field(
         default="base_think_system_prompt.jinja",
-        metadata={"help": "The system prompt name to use from the chat template. "
-                          "The available prompts are in `prompt_folder`"}
+        metadata={
+            "help": "The system prompt name to use from the chat template. "
+                    "The available prompts are in `prompt_folder`"
+        },
     )
 
     cache_db_connections_path: Optional[str] = field(
@@ -285,15 +306,17 @@ class EvaluateArgs(SFTScriptArguments):
     )
 
     target_sql_cache_db_path: Optional[str] = field(
-        default='.think2sql_cache/target_cached_query.sqlite',
+        default=".think2sql_cache/target_cached_query.sqlite",
         metadata={
-            "help": "Path to the cache database with the target queries. Can be different from the db of the prediction."},
+            "help": "Path to the cache database with the target queries. Can be different from the db of the prediction."
+        },
     )
 
     pred_sql_cache_db_path: Optional[str] = field(
-        default='.think2sql_cache/pred_cached_query.sqlite',
+        default=".think2sql_cache/pred_cached_query.sqlite",
         metadata={
-            "help": "Path to the cache database with the predicted queries. Can be different from the db of the target."},
+            "help": "Path to the cache database with the predicted queries. Can be different from the db of the target."
+        },
     )
 
     num_of_experiments: int = field(
@@ -301,13 +324,36 @@ class EvaluateArgs(SFTScriptArguments):
         metadata={"help": "Number of experiments for calculating standard deviation."},
     )
 
+    enable_thinking_mode: str | None = field(
+        default=None,
+        metadata={"help": "Whether to enable the thinking model for reasoning models."},
+    )
+
     def __post_init__(self):
         super().__post_init__()
-        if self.system_prompt_name is not None and self.system_prompt_name.lower() in ('none', 'null', ''):
+        if self.system_prompt_name is not None and self.system_prompt_name.lower() in (
+                "none",
+                "null",
+                "",
+        ):
             self.system_prompt_name = None
-        if self.omnisql_file_db_id_json_path is not None and self.omnisql_file_db_id_json_path.lower() in ('none',
-                                                                                                           'null', ''):
-            self.omnisql_file_db_id_json_path = None
+
+        if self.enable_thinking_mode is None:
+            self.enable_thinking_mode = False
+
+        if isinstance(self.enable_thinking_mode, str):
+            if self.enable_thinking_mode.lower() in ("true", "1", "yes"):
+                self.enable_thinking_mode = True
+            elif self.enable_thinking_mode.lower() in ("false", "0", "no"):
+                self.enable_thinking_mode = False
+            else:
+                raise ValueError(
+                    "`enable_thinking_model` must be a boolean or a string representing a boolean ('true', 'false', '1', '0', 'yes', 'no')"
+                )
+        elif not isinstance(self.enable_thinking_mode, bool):
+            raise ValueError(
+                f"`enable_thinking_model` must be a boolean or a string representing a boolean ('true', 'false', '1', '0', 'yes', 'no') instead is {type(self.enable_thinking_mode)}"
+            )
 
 
 @dataclass
