@@ -1,18 +1,19 @@
+num_of_experiments: 3
+
 # PROMPT PARAMS
-user_prompt_name: 'omnisql_user_prompt.jinja'
-system_prompt_name: 'none'
+#user_prompt_name: 'omnisql_user_prompt.jinja'
+#system_prompt_name: 'none'
+user_prompt_name: 'base_think_user_prompt.jinja'
+system_prompt_name: 'base_think_system_prompt.jinja'
 prompt_folder: 'prompts'
 
 # DATASET PARAMS
 #dataset_name: 'data/omnisql/data/bird/dev_20240627/dev.json'
-dataset_name: 'data/omnisql/data/dev_bird.json'
-task_name: 'bird_dev'
-add_sample_rows_strategy: 'inline'
+dataset_name: 'data/omnisql/data/processed/dev_bird_processed_with_plan_cols_time.json'
 relative_db_base_path: 'data/omnisql/data/bird/dev_20240627/dev_databases'
-omnisql_file_db_id_json_path: null
 
 # VLLM PARAMS
-model_name: "MPX0222forHF/SQL-R1-B"
+model_name: "Qwen/Qwen3-0.6B"
 dtype: "bfloat16"
 tensor_parallel_size: 1
 data_parallel_size: 1
@@ -25,7 +26,7 @@ override_chat_template: True
 vllm_server_host: '127.0.0.1'
 vllm_server_port: 24879
 litellm_provider: null # Provider used with LiteLLM
-
+enable_thinking_mode: false
 
 # GENERATION PARAMS
 # https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct/blob/main/generation_config.json

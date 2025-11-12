@@ -76,6 +76,7 @@ class VLLMPredictor:
               max_model_len=8192,
               *args,
               **kwargs) -> list[list[str]] | list[str]:
+        enable_thinking_mode = kwargs.get('enable_thinking_mode', False)
         self.model_name = model_name
         if sampling_params.stop_token_ids is None or len(sampling_params.stop_token_ids) == 0:
             logger.info(f'Adding stop_token_ids to sampling_params: {self.stop_token_ids}.')
@@ -93,7 +94,11 @@ class VLLMPredictor:
                 reasoning_effort=ReasoningEffort.HIGH
             )
         else:
-            chat_prompts = tokenizer.apply_chat_template(messages, add_generation_prompt=True, tokenize=False)
+            chat_prompts = tokenizer.apply_chat_template(messages,
+                                                         tokenize=False,
+                                                         add_generation_prompt=True,
+                                                         enable_thinking=enable_thinking_mode,
+                                                         )
         output = llm.generate(chat_prompts, sampling_params)
         responses = [o.outputs[0].text for o in output]
         return responses
@@ -111,6 +116,7 @@ class VLLMPredictor:
             max_model_len=max_model_len,
             gpu_memory_utilization=0.92,
             swap_space=42,
+            # enforce_eager=True,
             # disable_custom_all_reduce=True,
             trust_remote_code=True,
             data_parallel_size=dp,
@@ -134,7 +140,9 @@ class VLLMPredictor:
         for keys, ids in mapping:
             if any(k in name for k in keys):
                 return ids
-        raise ValueError(f"stop_token_ids for model {self.model_name} is not defined.")
+
+        logger.info(f'No stop_token_ids found for model {self.model_name}, using default of [151645].')
+        return [151645]
 
 
 class LiteLLMPredictor:
@@ -162,7 +170,7 @@ class LiteLLMPredictor:
             base_url = f"http://{kwargs.get('vllm_server_host', 'localhost')}:{kwargs.get('vllm_server_port', 8000)}"
             api_base = f"{base_url}/v1"
             logger.info(f'Using hosted_vllm with api_base: {api_base}')
-            check_server_availability(base_url, total_timeout=500, retry_interval=60)
+            check_server_availability(base_url, total_timeout=500, retry_interval=20)
 
         # stream=True makes each item in the returned list a streaming iterator
         model_answer = litellm.batch_completion(
@@ -180,6 +188,7 @@ class LiteLLMPredictor:
             drop_params=True,
             reasoning_effort='high' if 'gpt' in model_name.lower() else None,
             max_workers=8,
+            chat_template_kwargs={"enable_thinking": kwargs.get('enable_thinking_mode', False)}
             # stream=True if sampling_params.n > 1 or sampling_params.max_tokens > 15000 else False,
         )
 
@@ -198,7 +207,7 @@ class LiteLLMPredictor:
                 if not isinstance(out, ModelResponse):
                     if isinstance(out, BaseException):
                         raise out
-                    ValueError(f'The output is not of type ModelResponse but type {type(out)}: {out}')
+                    raise ValueError(f'The output is not of type ModelResponse but type {type(out)}: {out}')
 
                 choices_response = [choice['message']['content'] for choice in out['choices']]
 
