@@ -31,9 +31,29 @@ source "${BASE_WORK}/scripts/utils/utils.sh"
 if [[ -n "${SLURM_JOB_ID:-}" ]]; then
   source "${BASE_WORK}/scripts/utils/slurm_job_requeue.sh"
   setup_idris
+  # label, dataset, db_path
+  datasets=(
+    "Bird-dev"          "data/processed/dev_bird_processed_with_plan_cols_time.json"                   "data/omnisql/data/bird/dev_20240627/dev_databases"
+    "SPIDER-test"       "data/processed/test_spider_processed_with_plan_cols_time.json"                "data/omnisql/data/spider/test_database"
+    "SPIDER-DK"         "data/processed/dev_spider_dk_processed_with_plan_cols_time.json"              "data/omnisql/data/Spider-DK/database"
+    "SPIDER-SYN"        "data/processed/dev_spider_syn_processed_with_plan_cols_time.json"             "data/omnisql/data/spider/database"
+    "SPIDER-REALISTIC"  "data/processed/dev_spider_realistic_processed_with_plan_cols_time.json"       "data/omnisql/data/spider/database"
+    "sciencebenchmark"  "data/processed/dev_sciencebenchmark_processed_with_plan_cols_time.json"       "data/omnisql/data/sciencebenchmark/databases"
+    "EHRSQL"            "data/processed/dev_ehrsql_processed_with_plan_cols_time.json"                 "data/omnisql/data/EHRSQL/database"
+  )
 else
   source "${BASE_WORK}/scripts/utils/utils_clenup_vllm_if_crash.sh"
   export CUDA_VISIBLE_DEVICES='4,5'
+    # label, dataset, db_path
+  datasets=(
+    "Bird-dev"          "data/omnisql/data/processed/dev_bird_processed_with_plan_cols_time.json"                   "data/omnisql/data/bird/dev_20240627/dev_databases"
+    "SPIDER-test"       "data/omnisql/data/processed/test_spider_processed_with_plan_cols_time.json"                "data/omnisql/data/spider/test_database"
+    "SPIDER-DK"         "data/omnisql/data/processed/dev_spider_dk_processed_with_plan_cols_time.json"              "data/omnisql/data/Spider-DK/database"
+    "SPIDER-SYN"        "data/omnisql/data/processed/dev_spider_syn_processed_with_plan_cols_time.json"             "data/omnisql/data/spider/database"
+    "SPIDER-REALISTIC"  "data/omnisql/data/processed/dev_spider_realistic_processed_with_plan_cols_time.json"       "data/omnisql/data/spider/database"
+    "sciencebenchmark"  "data/omnisql/data/processed/dev_sciencebenchmark_processed_with_plan_cols_time.json"       "data/omnisql/data/sciencebenchmark/databases"
+    "EHRSQL"            "data/omnisql/data/processed/dev_ehrsql_processed_with_plan_cols_time.json"                 "data/omnisql/data/EHRSQL/database"
+  )
 fi
 
 
@@ -59,17 +79,6 @@ SYSTEM_PROMPT_NAME=''
 
 # ----------- Configuration -----------
 export OMP_NUM_THREADS=50
-
-# label, dataset, db_path
-datasets=(
-  "Bird-dev"          "data/omnisql/data/processed/dev_bird_processed_with_plan_cols_time.json"                   "data/omnisql/data/bird/dev_20240627/dev_databases"
-  "SPIDER-test"       "data/omnisql/data/processed/test_spider_processed_with_plan_cols_time.json"                "data/omnisql/data/spider/test_database"
-  "SPIDER-DK"         "data/omnisql/data/processed/dev_spider_dk_processed_with_plan_cols_time.json"              "data/omnisql/data/Spider-DK/database"
-  "SPIDER-SYN"        "data/omnisql/data/processed/dev_spider_syn_processed_with_plan_cols_time.json"             "data/omnisql/data/spider/database"
-  "SPIDER-REALISTIC"  "data/omnisql/data/processed/dev_spider_realistic_processed_with_plan_cols_time.json"       "data/omnisql/data/spider/database"
-  "sciencebenchmark"  "data/omnisql/data/processed/dev_sciencebenchmark_processed_with_plan_cols_time.json"       "data/omnisql/data/sciencebenchmark/databases"
-  "EHRSQL"            "data/omnisql/data/processed/dev_ehrsql_processed_with_plan_cols_time.json"                 "data/omnisql/data/EHRSQL/database"
-)
 
 
 # ----------- VLLM Server -----------
@@ -158,3 +167,15 @@ TOP_K=20
 REP_PENALTY=1.1
 NUM_SAMPLES=8
 run_suite $MODEL_NAME $TEMP $TOP_P $TOP_K $REP_PENALTY $NUM_SAMPLES
+
+
+if [[ -n "${WORK}" ]]; then
+    echo "Moving file into WORK: ${WORK}"
+    # Strip BASE_WORK prefix to keep relative structure
+    # Moving trained model
+    OUTPUT_DIR="${BASE_WORK}/results/"
+    DEST="${WORK}/evaluation_results"
+    cp_files "${DEST}" "${OUTPUT_DIR}" "${JOB_ID}"
+else
+    echo "WORK is not set; skipping move"
+fi
