@@ -184,10 +184,14 @@ class LiteLLMPredictor:
             presence_penalty=sampling_params.presence_penalty,
             frequency_penalty=sampling_params.frequency_penalty,
             api_base=api_base,
-            rpm=kwargs.get('rpm', None),
+            # rpm=kwargs.get('rpm', None),
             drop_params=True,
             reasoning_effort='high' if 'gpt' in model_name.lower() else None,
-            max_workers=8,
+            max_workers=120,
+            httpx_client_params={
+                "limits": {"max_connections": 200, "max_keepalive_connections": 100},
+                "timeout": 60,
+            },
             chat_template_kwargs={"enable_thinking": kwargs.get('enable_thinking_mode', False)}
             # stream=True if sampling_params.n > 1 or sampling_params.max_tokens > 15000 else False,
         )
