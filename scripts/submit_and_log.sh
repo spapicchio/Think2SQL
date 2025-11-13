@@ -63,7 +63,7 @@ if [ -z "${2:-}" ]; then
     stdbuf -oL tee >(stdbuf -oL grep 'WARNING' >> ${LOG_FOLDER}/warning.log) | \
     stdbuf -oL tee >(stdbuf -oL grep 'ERROR' >> ${LOG_FOLDER}/error.log)"
 else
-  JOB_OUTPUT=$(sbatch "${FAKE_JOB_PATH}")
+  JOB_OUTPUT=$(sbatch -J "$2" "${FAKE_JOB_PATH}")
   MY_SLURM_JOB_ID=$(echo "$JOB_OUTPUT" | awk '{print $4}')
 
   LOG_FOLDER="${LOG_FOLDER}/${TIME_TAG}-${JOB_NAME}-${MY_SLURM_JOB_ID}"
