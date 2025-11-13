@@ -29,7 +29,7 @@
   ],
   "mounts": [
     "source=/home/papicchi/.cache/huggingface,target=/hf_cache,type=bind",
-    "source=/home/papicchi/data,target=/workspaces/Think2SQL/data,type=bind,consistency=cached,readonly",
+    "source=/home/papicchi/data,target=/workspaces/Think2SQL/data,type=bind",
     // needed otherwise the cache_db created in 'cache_path' do not have correct permissions.
     "source=/home/papicchi/Think2SQL/.think2sql_cache,target=/workspace/.think2sql_cache,type=bind",
     "source=/home/papicchi/Think2SQL/.think2sql_eval_cache,target=/workspace/.think2sql_eval_cache,type=bind"
