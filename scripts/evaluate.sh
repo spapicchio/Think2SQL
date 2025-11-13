@@ -2,7 +2,6 @@
 #!/bin/bash
 #SBATCH -A vno@h100
 #SBATCH -C h100
-#SBATCH --job-name=eval-
 #SBATCH --ntasks-per-node=1
 #SBATCH --gpus-per-node=2
 #SBATCH --output=./logs/rl/%x-%j.out
@@ -45,16 +44,17 @@ if [[ -n "${SLURM_JOB_ID:-}" ]]; then
   )
 else
   source "${BASE_WORK}/scripts/utils/utils_clenup_vllm_if_crash.sh"
-  export CUDA_VISIBLE_DEVICES='1,2'
+  CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-1,2}"
+  export CUDA_VISIBLE_DEVICES
     # label, dataset, db_path
   datasets=(
     "Bird-dev"          "data/omnisql/data/processed/dev_bird_processed_with_plan_cols_time.json"                   "data/omnisql/data/bird/dev_20240627/dev_databases"
-#    "SPIDER-test"       "data/omnisql/data/processed/test_spider_processed_with_plan_cols_time.json"                "data/omnisql/data/spider/test_database"
-#    "SPIDER-DK"         "data/omnisql/data/processed/dev_spider_dk_processed_with_plan_cols_time.json"              "data/omnisql/data/Spider-DK/database"
-#    "SPIDER-SYN"        "data/omnisql/data/processed/dev_spider_syn_processed_with_plan_cols_time.json"             "data/omnisql/data/spider/database"
-#    "SPIDER-REALISTIC"  "data/omnisql/data/processed/dev_spider_realistic_processed_with_plan_cols_time.json"       "data/omnisql/data/spider/database"
-#    "sciencebenchmark"  "data/omnisql/data/processed/dev_sciencebenchmark_processed_with_plan_cols_time.json"       "data/omnisql/data/sciencebenchmark/databases"
-#    "EHRSQL"            "data/omnisql/data/processed/dev_ehrsql_processed_with_plan_cols_time.json"                 "data/omnisql/data/EHRSQL/database"
+    "SPIDER-test"       "data/omnisql/data/processed/test_spider_processed_with_plan_cols_time.json"                "data/omnisql/data/spider/test_database"
+    "SPIDER-DK"         "data/omnisql/data/processed/dev_spider_dk_processed_with_plan_cols_time.json"              "data/omnisql/data/Spider-DK/database"
+    "SPIDER-SYN"        "data/omnisql/data/processed/dev_spider_syn_processed_with_plan_cols_time.json"             "data/omnisql/data/spider/database"
+    "SPIDER-REALISTIC"  "data/omnisql/data/processed/dev_spider_realistic_processed_with_plan_cols_time.json"       "data/omnisql/data/spider/database"
+    "sciencebenchmark"  "data/omnisql/data/processed/dev_sciencebenchmark_processed_with_plan_cols_time.json"       "data/omnisql/data/sciencebenchmark/databases"
+    "EHRSQL"            "data/omnisql/data/processed/dev_ehrsql_processed_with_plan_cols_time.json"                 "data/omnisql/data/EHRSQL/database"
   )
 fi
 
@@ -65,19 +65,20 @@ echo  "Using ${NUM_GPUS} GPUs."
 DATA_PARALLEL_SIZE=$NUM_GPUS
 TENSOR_PARALLEL_SIZE=1
 
-ENABLE_THINKING_MODE='true'
+ENABLE_THINKING_MODE="${ENABLE_THINKING_MODE:-false}"
 #MODEL_NAME='Qwen/Qwen3-0.6B'
-MODEL_NAME='Qwen/Qwen3-1.7B'
+MODEL_NAME="${MODEL_NAME:-Qwen/Qwen3-0.6B}"
 #MODEL_NAME='Qwen/Qwen3-8B'
 #MODEL_NAME='model_trained/grpo/Qwen3-4B-Instruct-2507/dapo/bs256_ml4096_gen8_qwen-think4-e1147174_RL'
 
 MAX_PROMPT_LENGTH=8000
-#MAX_NEW_TOKENS=2048
-MAX_NEW_TOKENS=20000
+
+MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-2048}"
 MAX_MOD_LENGTH=$((MAX_PROMPT_LENGTH + MAX_NEW_TOKENS + 1024))
 
-USER_PROMPT_NAME='omnisql_user_prompt.jinja'
-SYSTEM_PROMPT_NAME=''
+USER_PROMPT_NAME="${USER_PROMPT_NAME:-omnisql_user_prompt.jinja}"
+SYSTEM_PROMPT_NAME="${SYSTEM_PROMPT_NAME:-}"
+
 #USER_PROMPT_NAME='base_think_user_prompt.jinja'
 #SYSTEM_PROMPT_NAME='base_think_system_prompt.jinja'
 
@@ -159,21 +160,21 @@ run_suite() {
 ###############################################################################
 # EXAMPLES
 ###############################################################################
-# run GREEDY (temp=0.0, top_p=1.0)
-TEMP=0.6
-TOP_P=0.95
-TOP_K=20
-REP_PENALTY=1.0
-NUM_SAMPLES=1
-run_suite $MODEL_NAME $TEMP $TOP_P $TOP_K $REP_PENALTY $NUM_SAMPLES
+# run GREEDY
+GREEDY_TEMP="${GREEDY_TEMP:-0.0}"
+GREEDY_TOP_P="${GREEDY_TOP_P:-1.0}"
+GREEDY_TOP_K="${GREEDY_TOP_K:-0}"
+GREEDY_REP_PENALTY="${GREEDY_REP_PENALTY:-1.0}"
+GREEDY_NUM_SAMPLES="${GREEDY_NUM_SAMPLES:-1}"
+run_suite "$MODEL_NAME" "$GREEDY_TEMP" "$GREEDY_TOP_P" "$GREEDY_TOP_K"  "$GREEDY_REP_PENALTY" "$GREEDY_NUM_SAMPLES"
 
-# majority Voting
-TEMP=1.0
-TOP_P=0.8
-TOP_K=20
-REP_PENALTY=1.1
-NUM_SAMPLES=8
-run_suite $MODEL_NAME $TEMP $TOP_P $TOP_K $REP_PENALTY $NUM_SAMPLES
+# majority voting config
+MV_TEMP="${MV_TEMP:-1.0}"
+MV_TOP_P="${MV_TOP_P:-0.8}"
+MV_TOP_K="${MV_TOP_K:-20}"
+MV_REP_PENALTY="${MV_REP_PENALTY:-1.1}"
+MV_NUM_SAMPLES="${MV_NUM_SAMPLES:-8}"
+run_suite "$MODEL_NAME" "$MV_TEMP" "$MV_TOP_P" "$MV_TOP_K" "$MV_REP_PENALTY" "$MV_NUM_SAMPLES"
 
 
 if [[ -n "${WORK}" ]]; then
