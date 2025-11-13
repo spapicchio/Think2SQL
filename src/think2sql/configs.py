@@ -329,6 +329,11 @@ class EvaluateArgs(SFTScriptArguments):
         metadata={"help": "Whether to enable the thinking model for reasoning models."},
     )
 
+    save_folder_path: str = field(
+        default="results",
+        metadata={"help": "The folder where to save the evaluation results."},
+    )
+
     def __post_init__(self):
         super().__post_init__()
         if self.system_prompt_name is not None and self.system_prompt_name.lower() in (

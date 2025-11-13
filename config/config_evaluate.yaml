@@ -1,10 +1,10 @@
 num_of_experiments: 3
-
+save_folder_path: results
 # PROMPT PARAMS
-#user_prompt_name: 'omnisql_user_prompt.jinja'
-#system_prompt_name: 'none'
-user_prompt_name: 'base_think_user_prompt.jinja'
-system_prompt_name: 'base_think_system_prompt.jinja'
+user_prompt_name: 'omnisql_user_prompt.jinja'
+system_prompt_name: 'none'
+#user_prompt_name: 'base_think_user_prompt.jinja'
+#system_prompt_name: 'base_think_system_prompt.jinja'
 prompt_folder: 'prompts'
 
 # DATASET PARAMS

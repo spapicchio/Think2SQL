@@ -88,7 +88,7 @@ def main_eval(
     db_ids = [line["db_id"] for line in dataset] * num_experiments
 
     logger.info(f"Total number of messages: {len(messages)}: {len(dataset)} * {num_experiments}")
-    predictions = predictor.infer(
+    predictions_str = predictor.infer(
         messages=messages,
         sampling_params=sampling_params,
         max_model_len=vllm_config.max_model_length,
@@ -98,7 +98,12 @@ def main_eval(
         **asdict(evaluate_args),
     )
 
-    logger.info(f'Prediction Example: {predictions[0]}')
+    logger.info(f'Prediction Example: {predictions_str[0]}')
+
+    if generation_params.number_of_completions == 1:
+        predictions = [[{'content': pred}] for pred in predictions_str]
+    else:
+        predictions = [[{'content': p} for p in pred] for pred in predictions_str]
 
     results = nl2sql_reward(
         completions=predictions,
@@ -115,11 +120,12 @@ def main_eval(
     for i in range(num_experiments):
         start = i * len(dataset)
         end = start + len(dataset)
-        n_pred = predictions[start:end]
+        n_pred = predictions_str[start:end]
         n_results = results[start:end]
         df[f'{model_name}_{i}'] = n_pred
+
         sql_prediction = [
-            extract_sql_or_same(pred[0]) if generation_params.number_of_completions == 1
+            extract_sql_or_same(pred) if generation_params.number_of_completions == 1
             else [extract_sql_or_same(p) for p in pred]
             for pred in n_pred
         ]
@@ -139,7 +145,7 @@ def main_eval(
     )
     logger.warning(summary_results)
     saver.save(
-        folder=Path('./results') / dataset_name / model_name / strategy,
+        folder=Path(evaluate_args.save_folder_path) / strategy,
         df=df,
         configs=(vllm_config, generation_params, sampling_params, evaluate_args, summary_results),
     )

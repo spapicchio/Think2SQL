@@ -33,7 +33,6 @@ class JSONSaver:
         for config in configs:
             config_name = config.__class__.__name__ if is_dataclass(config) else type(config).__name__
             config_path = path / f"{config_name}.json"
-
             config_data = asdict(config) if is_dataclass(config) else config
             with open(config_path, "w") as f:
                 json.dump(config_data, f, indent=4, default=str)

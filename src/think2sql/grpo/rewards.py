@@ -10,7 +10,7 @@ from NL2SQLEvaluator.db_executor_nodes import SQLiteDBExecutor, SqliteCache
 from NL2SQLEvaluator.db_executor_nodes.cache.cache_protocol import OutputTable
 from NL2SQLEvaluator.db_executor_nodes.db_executor_protocol import (
     ExecuteTask,
-    extract_sql_or_same,
+    extract_sql_or_same, ExecutorError,
 )
 from NL2SQLEvaluator.evaluator_nodes import BirdEXEvaluator
 from NL2SQLEvaluator.evaluator_nodes.evaluator_protocol import (
@@ -31,18 +31,15 @@ def _read_counter(name: str) -> Any:
     return globals().get(name, 0)
 
 
-def _parse_model_response(completion) -> str | list[str]:
-    if isinstance(completion, str):
-        return completion
-    elif "content" in completion[0]:
-        pred = [val["content"] for val in completion]
-        return pred if len(pred) > 1 else pred[0]
-    else:
-        return completion
+def _parse_model_response(completion: list[dict]) -> list[str] | str:
+    # completion may be composed of different decoded sequences
+    # most probably during training we will have only one decoded sequence
+    pred: list[str] = [val["content"] for val in completion]
+    return pred if len(pred) > 1 else pred[0]
 
 
 def reward_selected_tables(
-        completions: list[dict],
+        completions: list[list[dict]],
         tbls_in_query: list[list[str]],
         *args,
         **kwargs,
@@ -54,10 +51,8 @@ def reward_selected_tables(
     logger.info(
         f"[REWARD_TABLES][START][{hash_id}] Calculating reward_selected_tables for {len(completions)} completions"
     )
+    model_predictions = [_parse_model_response(val) for val in completions]
 
-    model_predictions = [
-        _parse_model_response(completion) for completion in completions
-    ]
     assert len(model_predictions) == len(tbls_in_query), (
         "Length mismatch between completions and tables in query"
     )
@@ -83,7 +78,7 @@ def reward_selected_tables(
 
 
 def reward_selected_columns(
-        completions: list[dict],
+        completions: list[list[dict]],
         cols_in_query: list[list[str]],
         *args,
         **kwargs,
@@ -95,9 +90,7 @@ def reward_selected_columns(
     logger.info(
         f"[REWARD_COLS][START][{hash_id}] Calculating reward_selected_columns for {len(completions)} completions"
     )
-    model_predictions = [
-        _parse_model_response(completion) for completion in completions
-    ]
+    model_predictions = [_parse_model_response(val) for val in completions]
     assert len(model_predictions) == len(cols_in_query), (
         "Length mismatch between completions and columns in query"
     )
@@ -121,7 +114,7 @@ def reward_selected_columns(
 
 
 def nl2sql_reward(
-        completions: list[dict],
+        completions: list[list[dict]],
         target_sql: list[str],
         db_id: list[str],
         evaluator: EvaluatorProtocol,
@@ -136,7 +129,7 @@ def nl2sql_reward(
             if isinstance(val, OutputTable):
                 output_.append(val)
                 continue
-            logger.debug(val)
+            logger.info(val)
         return output_
 
     # run in parallel predictions and targets
@@ -144,9 +137,8 @@ def nl2sql_reward(
     start_time = time.perf_counter()
     hash_id = hash(start_time)
     start_time = time.perf_counter()
-    model_predictions = [
-        _parse_model_response(completion) for completion in completions
-    ]
+    model_predictions = [_parse_model_response(val) for val in completions]
+
     target_sql_results, model_predictions_results = _execute_target_and_pred_sql(
         db_ids=db_id,
         target_sqls=target_sql,
@@ -227,9 +219,8 @@ def multi_tag_format_reward(completions, **kwargs):
         r"<answer>\s*([\s\S]*?)\s*</answer>\s*\Z",  # \Z = end of string (ignores final \n issues)
         flags=re.DOTALL | re.MULTILINE | re.IGNORECASE,
     )
-    completion_contents = [
-        _parse_model_response(completion) for completion in completions
-    ]
+    completion_contents = [_parse_model_response(val) for val in completions]
+
     matches = [pattern.fullmatch(content.strip()) for content in completion_contents]
     return [1.0 if match else 0.0 for match in matches]
 
@@ -237,13 +228,28 @@ def multi_tag_format_reward(completions, **kwargs):
 def _execute_target_and_pred_sql(
         db_ids: list[str],
         target_sqls: list[str],
-        pred_sqls: list[str],
+        pred_sqls: list[str] | list[list[str]],
         timeout: list[float],
         relative_db_base_path: str,
-):
+) -> tuple[list[list[OutputTable | ExecutorError]], list[list[OutputTable | ExecutorError]]]:
+    if not isinstance(target_sqls, list) or not isinstance(pred_sqls, list) or not isinstance(db_ids, list):
+        raise ValueError(
+            "target_sqls and pred_sqls must be lists in _execute_target_and_pred_sql"
+        )
+    if isinstance(pred_sqls[0], str):
+        pred_sqls = [[extract_sql_or_same(sql)] for sql in pred_sqls]
+    elif isinstance(pred_sqls[0], list):
+        pred_sqls = [[extract_sql_or_same(sql) for sql in sqls] for sqls in pred_sqls]
+    else:
+        raise ValueError(
+            f"pred_sqls must be a list of strings or a list of list of strings in _execute_target_and_pred_sql instead of {type(pred_sqls[0])}"
+        )
+
     db_files = [os.path.join(relative_db_base_path, id_, f"{id_}.sqlite") for id_ in db_ids] * 2
     timeout = timeout * 2
     timeout = [min(t + (0.20 * t) + 10, 500) for t in timeout]
+    target_sqls = [[sql] for sql in target_sqls]
+
     query_to_execute = target_sqls + pred_sqls
 
     assert len(db_files) == len(query_to_execute) == len(timeout), (
@@ -256,7 +262,7 @@ def _execute_target_and_pred_sql(
 
     num_cpus = min(_read_counter("AVAIL_CPU_PER_GPU"), max(1, len(query_to_execute)))
     tasks = [
-        ExecuteTask(db_files=db_file, queries=[extract_sql_or_same(query)], timeout=t)
+        ExecuteTask(db_files=db_file, queries=query, timeout=t)
         for db_file, query, t in zip(db_files, query_to_execute, timeout)
     ]
     executed_queries = SQLiteDBExecutor().execute_queries(
