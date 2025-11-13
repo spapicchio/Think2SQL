@@ -66,9 +66,9 @@ else
   JOB_OUTPUT=$(sbatch -J "$2" "${FAKE_JOB_PATH}")
   MY_SLURM_JOB_ID=$(echo "$JOB_OUTPUT" | awk '{print $4}')
 
-  LOG_FOLDER="${LOG_FOLDER}/${TIME_TAG}-${JOB_NAME}-${MY_SLURM_JOB_ID}"
+  LOG_FOLDER="${LOG_FOLDER}/${TIME_TAG}-${MY_SLURM_JOB_ID}"
   mkdir -p $LOG_FOLDER
-  SLURM_LOG="${BASE_WORK}/logs/rl/${JOB_NAME}-${MY_SLURM_JOB_ID}.out"
+  SLURM_LOG="${BASE_WORK}/logs/rl/${MY_SLURM_JOB_ID}.out"
   ln -s "$SLURM_LOG" "${LOG_FOLDER}/all.out"
 
   NEW_PATH="${DEST_DIR}/${TIME_TAG}-${JOB_NAME}-${MY_SLURM_JOB_ID}.sh"

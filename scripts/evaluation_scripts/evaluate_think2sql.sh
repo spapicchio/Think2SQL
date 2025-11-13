@@ -4,7 +4,7 @@
 #SBATCH -C h100
 #SBATCH --ntasks-per-node=1
 #SBATCH --gpus-per-node=2
-#SBATCH --output=./logs/rl/%x-%j.out
+#SBATCH --output=./logs/rl/%j.out
 #SBATCH --nodes=1
 #SBATCH --qos=qos_gpu_h100-t3
 #SBATCH --time=05:00:00
@@ -36,7 +36,7 @@ MAX_NEW_TOKENS=4096
 USER_PROMPT_NAME='base_think_user_prompt.jinja'
 SYSTEM_PROMPT_NAME='base_think_system_prompt.jinja'
 
-ENABLE_THINKING_MODE='true'
+ENABLE_THINKING_MODE=''
 
 CUDA_VISIBLE_DEVICES='4' \
 MODEL_NAME=$MODEL_NAME \

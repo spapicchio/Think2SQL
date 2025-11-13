@@ -4,7 +4,7 @@
 #SBATCH -C h100
 #SBATCH --ntasks-per-node=1
 #SBATCH --gpus-per-node=2
-#SBATCH --output=./logs/rl/%x-%j.out
+#SBATCH --output=./logs/rl/%j.out
 #SBATCH --nodes=1
 #SBATCH --qos=qos_gpu_h100-t3
 #SBATCH --time=05:00:00

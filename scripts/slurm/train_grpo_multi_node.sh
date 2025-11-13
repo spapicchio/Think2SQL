@@ -4,7 +4,7 @@
 #SBATCH --job-name=rl-4B-ex
 #SBATCH --ntasks-per-node=1
 #SBATCH --gpus-per-node=4
-#SBATCH --output=./logs/rl/%x-%j.out
+#SBATCH --output=./logs/rl/%j.out
 #SBATCH --nodes=2
 #SBATCH --qos=qos_gpu_h100-t3
 #SBATCH --time=20:00:00
