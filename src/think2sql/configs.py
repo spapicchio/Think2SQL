@@ -343,8 +343,8 @@ class EvaluateArgs(SFTScriptArguments):
         ):
             self.system_prompt_name = None
 
-        if self.enable_thinking_mode is None:
-            self.enable_thinking_mode = False
+        if self.enable_thinking_mode.lower in {'', 'none', 'null'}:
+            self.enable_thinking_mode = None
 
         if isinstance(self.enable_thinking_mode, str):
             if self.enable_thinking_mode.lower() in ("true", "1", "yes"):

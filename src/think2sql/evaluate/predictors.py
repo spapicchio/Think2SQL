@@ -76,7 +76,7 @@ class VLLMPredictor:
               max_model_len=8192,
               *args,
               **kwargs) -> list[list[str]] | list[str]:
-        enable_thinking_mode = kwargs.get('enable_thinking_mode', False)
+        enable_thinking_mode = kwargs.get('enable_thinking_mode', None)
         self.model_name = model_name
         if sampling_params.stop_token_ids is None or len(sampling_params.stop_token_ids) == 0:
             logger.info(f'Adding stop_token_ids to sampling_params: {self.stop_token_ids}.')
@@ -86,21 +86,20 @@ class VLLMPredictor:
         llm = self._load_model(tp, dp, max_model_len)
         tokenizer = self._load_tokenizer()
         # reasoning effort: https://huggingface.co/docs/trl/main/dataset_formats#harmony
+        optional_params = {}
+
         if 'gpt' in self.model_name:
-            chat_prompts = tokenizer.apply_chat_template(
-                messages,
-                add_generation_prompt=True,
-                tokenize=False,
-                reasoning_effort=ReasoningEffort.HIGH
-            )
-        else:
-            chat_prompts = tokenizer.apply_chat_template(messages,
-                                                         tokenize=False,
-                                                         add_generation_prompt=True,
-                                                         enable_thinking=enable_thinking_mode,
-                                                         )
+            optional_params['reasoning_effort'] = ReasoningEffort.HIGH
+
+        if enable_thinking_mode is not None:
+            optional_params['enable_thinking'] = enable_thinking_mode
+
+        chat_prompts = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True,
+                                                     **optional_params)
         output = llm.generate(chat_prompts, sampling_params)
+
         responses = [o.outputs[0].text for o in output]
+
         return responses
 
     def _load_tokenizer(self):
@@ -173,6 +172,14 @@ class LiteLLMPredictor:
             check_server_availability(base_url, total_timeout=500, retry_interval=20)
 
         # stream=True makes each item in the returned list a streaming iterator
+        optional_params = {}
+        enable_thinking_mode = kwargs.get('enable_thinking_mode', None)
+
+        if enable_thinking_mode is not None:
+            optional_params['chat_template_kwargs'] = {"enable_thinking": enable_thinking_mode}
+        if 'gpt' in model_name:
+            optional_params['reasoning_effort'] = ReasoningEffort.HIGH
+
         model_answer = litellm.batch_completion(
             model=f"{litellm_provider}/{model_name}",
             messages=messages,
@@ -188,8 +195,7 @@ class LiteLLMPredictor:
             drop_params=True,
             reasoning_effort='high' if 'gpt' in model_name.lower() else None,
             max_workers=200,
-            chat_template_kwargs={"enable_thinking": kwargs.get('enable_thinking_mode', False)}
-            # stream=True if sampling_params.n > 1 or sampling_params.max_tokens > 15000 else False,
+            **optional_params,
         )
 
         parsed_responses = self.parse_model_output(model_answer)
