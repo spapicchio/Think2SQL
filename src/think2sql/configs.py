@@ -345,11 +345,11 @@ class EvaluateArgs(SFTScriptArguments):
 
         # Normalize enable_thinking_mode
         if isinstance(self.enable_thinking_mode_in_eval, str):
-            if self.enable_thinking_mode.lower() in {'', 'none', 'null'}:
+            if self.enable_thinking_mode_in_eval.lower() in {'', 'none', 'null'}:
                 self.enable_thinking_mode_in_eval = None
-            elif self.enable_thinking_mode.lower() in ("true", "1", "yes"):
+            elif self.enable_thinking_mode_in_eval.lower() in ("true", "1", "yes"):
                 self.enable_thinking_mode_in_eval = True
-            elif self.enable_thinking_mode.lower() in ("false", "0", "no"):
+            elif self.enable_thinking_mode_in_eval.lower() in ("false", "0", "no"):
                 self.enable_thinking_mode_in_eval = False
             else:
                 raise ValueError(
@@ -357,13 +357,13 @@ class EvaluateArgs(SFTScriptArguments):
                 )
         elif self.enable_thinking_mode_in_eval is not None and not isinstance(self.enable_thinking_mode_in_eval, bool):
             raise ValueError(
-                f"`enable_thinking_model` must be a boolean or a string representing a boolean ('true', 'false', '1', '0', 'yes', 'no') instead is {type(self.enable_thinking_mode)}"
+                f"`enable_thinking_model` must be a boolean or a string representing a boolean ('true', 'false', '1', '0', 'yes', 'no') instead is {type(self.enable_thinking_mode_in_eval)}"
             )
 
         # If enabled, provide kwargs that can be used by chat templates/tokenizers
         if isinstance(self.enable_thinking_mode_in_eval, bool):
             # Some tokenizers accept chat_template_kwargs or enable_thinking directly
-            self.chat_template_kwargs = {"enable_thinking": self.enable_thinking_mode}
+            self.chat_template_kwargs = {"enable_thinking": self.enable_thinking_mode_in_eval}
 
 
 @dataclass
