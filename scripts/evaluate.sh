@@ -133,7 +133,7 @@ run_suite() {
     --litellm_provider "hosted_vllm"
     --user_prompt_name "${USER_PROMPT_NAME}"
     --system_prompt_name "${SYSTEM_PROMPT_NAME}"
-    --enable_thinking_mode "${ENABLE_THINKING_MODE}"
+    --enable_thinking_mode_in_eval "${ENABLE_THINKING_MODE}"
   )
 
   for ((i=0; i<${#datasets[@]}; i+=3)); do

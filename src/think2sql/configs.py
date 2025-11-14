@@ -324,7 +324,7 @@ class EvaluateArgs(SFTScriptArguments):
         metadata={"help": "Number of experiments for calculating standard deviation."},
     )
 
-    enable_thinking_mode: str | None = field(
+    enable_thinking_mode_in_eval: str | None = field(
         default=None,
         metadata={"help": "Whether to enable the thinking model for reasoning models."},
     )
@@ -343,22 +343,27 @@ class EvaluateArgs(SFTScriptArguments):
         ):
             self.system_prompt_name = None
 
-        if self.enable_thinking_mode.lower in {'', 'none', 'null'}:
-            self.enable_thinking_mode = None
-
-        if isinstance(self.enable_thinking_mode, str):
-            if self.enable_thinking_mode.lower() in ("true", "1", "yes"):
-                self.enable_thinking_mode = True
+        # Normalize enable_thinking_mode
+        if isinstance(self.enable_thinking_mode_in_eval, str):
+            if self.enable_thinking_mode.lower() in {'', 'none', 'null'}:
+                self.enable_thinking_mode_in_eval = None
+            elif self.enable_thinking_mode.lower() in ("true", "1", "yes"):
+                self.enable_thinking_mode_in_eval = True
             elif self.enable_thinking_mode.lower() in ("false", "0", "no"):
-                self.enable_thinking_mode = False
+                self.enable_thinking_mode_in_eval = False
             else:
                 raise ValueError(
                     "`enable_thinking_model` must be a boolean or a string representing a boolean ('true', 'false', '1', '0', 'yes', 'no')"
                 )
-        elif not isinstance(self.enable_thinking_mode, bool):
+        elif self.enable_thinking_mode_in_eval is not None and not isinstance(self.enable_thinking_mode_in_eval, bool):
             raise ValueError(
                 f"`enable_thinking_model` must be a boolean or a string representing a boolean ('true', 'false', '1', '0', 'yes', 'no') instead is {type(self.enable_thinking_mode)}"
             )
+
+        # If enabled, provide kwargs that can be used by chat templates/tokenizers
+        if isinstance(self.enable_thinking_mode_in_eval, bool):
+            # Some tokenizers accept chat_template_kwargs or enable_thinking directly
+            self.chat_template_kwargs = {"enable_thinking": self.enable_thinking_mode}
 
 
 @dataclass

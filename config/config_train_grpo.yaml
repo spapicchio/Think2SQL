@@ -2,7 +2,7 @@
 prompt_folder: prompts
 user_prompt_name: base_think_user_prompt.jinja
 system_prompt_name: base_think_system_prompt.jinja
-add_sample_rows_strategy: 'inline'  # Available: 'none', 'inline', 'append'
+
 cache_db_connections_path: '.think2sql_cache'
 target_sql_cache_db_path: '.think2sql_cache/target_cached_query.sqlite'
 pred_sql_cache_db_path: '.think2sql_cache/pred_cached_query.sqlite'

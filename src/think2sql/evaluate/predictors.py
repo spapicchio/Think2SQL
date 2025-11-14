@@ -76,7 +76,7 @@ class VLLMPredictor:
               max_model_len=8192,
               *args,
               **kwargs) -> list[list[str]] | list[str]:
-        enable_thinking_mode = kwargs.get('enable_thinking_mode', None)
+        enable_thinking_mode = kwargs.get('enable_thinking_mode_in_eval', None)
         self.model_name = model_name
         if sampling_params.stop_token_ids is None or len(sampling_params.stop_token_ids) == 0:
             logger.info(f'Adding stop_token_ids to sampling_params: {self.stop_token_ids}.')
@@ -173,7 +173,7 @@ class LiteLLMPredictor:
 
         # stream=True makes each item in the returned list a streaming iterator
         optional_params = {}
-        enable_thinking_mode = kwargs.get('enable_thinking_mode', None)
+        enable_thinking_mode = kwargs.get('enable_thinking_mode_in_eval', None)
 
         if enable_thinking_mode is not None:
             optional_params['chat_template_kwargs'] = {"enable_thinking": enable_thinking_mode}

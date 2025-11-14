@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export WANDB_PROJECT='think2sql'
+
 if [ -z "$BASE_WORK" ]; then
   echo "BASE_WORK not set. must be set before sourcing utils.sh"
   exit 1
