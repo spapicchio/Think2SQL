@@ -343,27 +343,24 @@ class EvaluateArgs(SFTScriptArguments):
         ):
             self.system_prompt_name = None
 
-        # Normalize enable_thinking_mode
+        if self.enable_thinking_mode_in_eval is None:
+            self.enable_thinking_mode_in_eval = False
+
         if isinstance(self.enable_thinking_mode_in_eval, str):
-            if self.enable_thinking_mode_in_eval.lower() in {'', 'none', 'null'}:
+            if self.enable_thinking_mode_in_eval.lower() in {"", "none", "null"}:
                 self.enable_thinking_mode_in_eval = None
-            elif self.enable_thinking_mode_in_eval.lower() in ("true", "1", "yes"):
+            if self.enable_thinking_mode_in_eval.lower() in ("true", "1", "yes"):
                 self.enable_thinking_mode_in_eval = True
             elif self.enable_thinking_mode_in_eval.lower() in ("false", "0", "no"):
                 self.enable_thinking_mode_in_eval = False
             else:
                 raise ValueError(
-                    "`enable_thinking_model` must be a boolean or a string representing a boolean ('true', 'false', '1', '0', 'yes', 'no')"
+                    "`enable_thinking_mode_in_eval` must be a boolean or a string representing a boolean ('true', 'false', '1', '0', 'yes', 'no')"
                 )
-        elif self.enable_thinking_mode_in_eval is not None and not isinstance(self.enable_thinking_mode_in_eval, bool):
+        elif not isinstance(self.enable_thinking_mode_in_eval, bool):
             raise ValueError(
-                f"`enable_thinking_model` must be a boolean or a string representing a boolean ('true', 'false', '1', '0', 'yes', 'no') instead is {type(self.enable_thinking_mode_in_eval)}"
+                f"`enable_thinking_mode_in_eval` must be a boolean or a string representing a boolean ('true', 'false', '1', '0', 'yes', 'no') instead is {type(self.enable_thinking_mode_in_eval)}"
             )
-
-        # If enabled, provide kwargs that can be used by chat templates/tokenizers
-        if isinstance(self.enable_thinking_mode_in_eval, bool):
-            # Some tokenizers accept chat_template_kwargs or enable_thinking directly
-            self.chat_template_kwargs = {"enable_thinking": self.enable_thinking_mode_in_eval}
 
 
 @dataclass

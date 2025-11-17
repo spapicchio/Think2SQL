@@ -26,7 +26,7 @@ override_chat_template: True
 vllm_server_host: '127.0.0.1'
 vllm_server_port: 24879
 litellm_provider: null # Provider used with LiteLLM
-enable_thinking_mode: false
+enable_thinking_mode_in_eval: false
 
 # GENERATION PARAMS
 # https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct/blob/main/generation_config.json
