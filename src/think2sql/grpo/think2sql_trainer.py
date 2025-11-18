@@ -9,8 +9,7 @@ from trl import get_peft_config, ModelConfig, GRPOTrainer
 
 from think2sql.configs import GRPOScriptArguments, GRPOConfig
 from think2sql.data_processor import build_messages
-# from think2sql.data_processor.get_ddl import get_schema
-from think2sql.grpo.rewards import get_reward_funcs
+from think2sql.grpo.rewards.get_rewards_fun import get_reward_funcs
 from think2sql.logger import get_logger
 from think2sql.utils.callbacks import get_callbacks
 from think2sql.utils.data import get_dataset
