@@ -5,9 +5,18 @@ from NL2SQLEvaluator.evaluator_nodes import BirdEXEvaluator
 from NL2SQLEvaluator.evaluator_nodes.qatch_metrics import QATCHEvaluator
 
 from think2sql.configs import GRPOScriptArguments
-from think2sql.grpo.rewards.rewards_answer_content import nl2sql_reward, reward_sql_r1
-from think2sql.grpo.rewards.rewards_reasoning_content import format_reward, tag_count_reward, multi_tag_format_reward, \
-    reward_selected_tables, reward_selected_columns
+from think2sql.grpo.rewards.rewards_answer_content import (
+    nl2sql_reward,
+    reward_sql_r1,
+    reward_arctic_sql
+)
+from think2sql.grpo.rewards.rewards_reasoning_content import (
+    format_reward,
+    tag_count_reward,
+    multi_tag_format_reward,
+    reward_selected_tables,
+    reward_selected_columns
+)
 
 
 def get_reward_funcs(
@@ -38,6 +47,7 @@ def get_reward_funcs(
         "table_recall": reward_selected_tables,
         "column_recall": reward_selected_columns,
         "SQL-R1": reward_sql_r1,
+        'arctic_sql': reward_arctic_sql,
     }
 
     reward_funcs = [REWARD_FUNCS_REGISTRY[func] for func in script_args.reward_funcs]

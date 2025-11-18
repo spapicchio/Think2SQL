@@ -80,6 +80,41 @@ def reward_sql_r1(completions: list[list[dict]],
     return scores
 
 
+def reward_arctic_sql(completions: list[list[dict]],
+                      target_sql: list[str],
+                      db_id: list[str],
+                      evaluator: EvaluatorProtocol,
+                      relative_db_base_path: str,
+                      sql_execution_time: list[float],
+                      *args,
+                      **kwargs,
+                      ) -> list[float]:
+    logger = get_logger("REWARD-Arctic-sql")
+    start_time = time.perf_counter()
+    hash_id = hash(start_time)
+    start_time = time.perf_counter()
+    model_predictions = [utils_parse_model_response(val) for val in completions]
+    target_sql_results, model_predictions_results = utils_execute_target_and_pred_sql(
+        db_ids=db_id,
+        target_sqls=target_sql,
+        pred_sqls=model_predictions,
+        timeout=sql_execution_time,
+        relative_db_base_path=relative_db_base_path,
+    )
+    scores = []
+    for completion, exec_pred, exec_target in zip(model_predictions, model_predictions_results, target_sql_results):
+        if isinstance(exec_pred, Exception):
+            scores.append(0)
+            continue
+        task = EvaluateTask(predictions=exec_pred, target=exec_target)
+        ex_accuracy = evaluator.execute_metric(tasks=[task], *args, **kwargs)[0]
+        scores.append(1 if ex_accuracy > 0 else 0.1)
+    logger.info(
+        f"[REWARD-Arctic-sql][END][{hash_id}] Completed in {time.perf_counter() - start_time:.2f} seconds"
+    )
+    return scores
+
+
 def nl2sql_reward(
         completions: list[list[dict]],
         target_sql: list[str],
