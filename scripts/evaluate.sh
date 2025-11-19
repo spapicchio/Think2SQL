@@ -34,13 +34,13 @@ if [[ -n "${SLURM_JOB_ID:-}" ]]; then
   setup_idris
   # label, dataset, db_path
   datasets=(
-    "Bird-dev"          "data/processed/dev_bird_processed_with_plan_cols_time.json"                   "data/omnisql/bird/dev_20240627/dev_databases"
     "SPIDER-test"       "data/processed/test_spider_processed_with_plan_cols_time.json"                "data/omnisql/spider/test_database"
+    "Bird-dev"          "data/processed/dev_bird_processed_with_plan_cols_time.json"                   "data/omnisql/bird/dev_20240627/dev_databases"
     "SPIDER-DK"         "data/processed/dev_spider_dk_processed_with_plan_cols_time.json"              "data/omnisql/Spider-DK/database"
     "SPIDER-SYN"        "data/processed/dev_spider_syn_processed_with_plan_cols_time.json"             "data/omnisql/spider/database"
     "SPIDER-REALISTIC"  "data/processed/dev_spider_realistic_processed_with_plan_cols_time.json"       "data/omnisql/spider/database"
-    "sciencebenchmark"  "data/processed/dev_sciencebenchmark_processed_with_plan_cols_time.json"       "data/omnisql/sciencebenchmark/databases"
-    "EHRSQL"            "data/processed/dev_ehrsql_processed_with_plan_cols_time.json"                 "data/omnisql/EHRSQL/database"
+    # "sciencebenchmark"  "data/processed/dev_sciencebenchmark_processed_with_plan_cols_time.json"       "data/omnisql/sciencebenchmark/databases"
+    # "EHRSQL"            "data/processed/dev_ehrsql_processed_with_plan_cols_time.json"                 "data/omnisql/EHRSQL/database"
   )
 else
   source "${BASE_WORK}/scripts/utils/utils_clenup_vllm_if_crash.sh"
@@ -48,13 +48,13 @@ else
   export CUDA_VISIBLE_DEVICES
     # label, dataset, db_path
   datasets=(
-    "Bird-dev"          "data/omnisql/data/processed/dev_bird_processed_with_plan_cols_time.json"                   "data/omnisql/data/bird/dev_20240627/dev_databases"
     "SPIDER-test"       "data/omnisql/data/processed/test_spider_processed_with_plan_cols_time.json"                "data/omnisql/data/spider/test_database"
+    "Bird-dev"          "data/omnisql/data/processed/dev_bird_processed_with_plan_cols_time.json"                   "data/omnisql/data/bird/dev_20240627/dev_databases"
     "SPIDER-DK"         "data/omnisql/data/processed/dev_spider_dk_processed_with_plan_cols_time.json"              "data/omnisql/data/Spider-DK/database"
     "SPIDER-SYN"        "data/omnisql/data/processed/dev_spider_syn_processed_with_plan_cols_time.json"             "data/omnisql/data/spider/database"
     "SPIDER-REALISTIC"  "data/omnisql/data/processed/dev_spider_realistic_processed_with_plan_cols_time.json"       "data/omnisql/data/spider/database"
-    "sciencebenchmark"  "data/omnisql/data/processed/dev_sciencebenchmark_processed_with_plan_cols_time.json"       "data/omnisql/data/sciencebenchmark/databases"
-    "EHRSQL"            "data/omnisql/data/processed/dev_ehrsql_processed_with_plan_cols_time.json"                 "data/omnisql/data/EHRSQL/database"
+    # "sciencebenchmark"  "data/omnisql/data/processed/dev_sciencebenchmark_processed_with_plan_cols_time.json"       "data/omnisql/data/sciencebenchmark/databases"
+    # "EHRSQL"            "data/omnisql/data/processed/dev_ehrsql_processed_with_plan_cols_time.json"                 "data/omnisql/data/EHRSQL/database"
   )
 fi
 
@@ -168,16 +168,16 @@ GREEDY_REP_PENALTY="${GREEDY_REP_PENALTY:-1.0}"
 GREEDY_NUM_SAMPLES="${GREEDY_NUM_SAMPLES:-1}"
 run_suite "$MODEL_NAME" "$GREEDY_TEMP" "$GREEDY_TOP_P" "$GREEDY_TOP_K"  "$GREEDY_REP_PENALTY" "$GREEDY_NUM_SAMPLES"
 
-# majority voting config
-MV_TEMP="${MV_TEMP:-1.0}"
-MV_TOP_P="${MV_TOP_P:-0.8}"
-MV_TOP_K="${MV_TOP_K:-20}"
-MV_REP_PENALTY="${MV_REP_PENALTY:-1.1}"
-MV_NUM_SAMPLES="${MV_NUM_SAMPLES:-8}"
-run_suite "$MODEL_NAME" "$MV_TEMP" "$MV_TOP_P" "$MV_TOP_K" "$MV_REP_PENALTY" "$MV_NUM_SAMPLES"
+# # majority voting config
+# MV_TEMP="${MV_TEMP:-1.0}"
+# MV_TOP_P="${MV_TOP_P:-0.8}"
+# MV_TOP_K="${MV_TOP_K:-20}"
+# MV_REP_PENALTY="${MV_REP_PENALTY:-1.1}"
+# MV_NUM_SAMPLES="${MV_NUM_SAMPLES:-8}"
+# run_suite "$MODEL_NAME" "$MV_TEMP" "$MV_TOP_P" "$MV_TOP_K" "$MV_REP_PENALTY" "$MV_NUM_SAMPLES"
 
 
-if [[ -n "${WORK}" ]]; then
+if [[ -n "${WORK:-}" ]]; then
     echo "Moving file into WORK: ${WORK}"
     # Strip BASE_WORK prefix to keep relative structure
     # Moving trained model

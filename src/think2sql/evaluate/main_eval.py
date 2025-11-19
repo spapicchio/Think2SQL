@@ -12,7 +12,7 @@ from think2sql.data_processor import build_messages
 from think2sql.evaluate.configs import EvalVLLMConfig, EvalGenerationParams
 from think2sql.evaluate.predictors import Predictor, VLLMPredictor, LiteLLMPredictor
 from think2sql.evaluate.saver import DataframeSaver, JSONSaver
-from think2sql.grpo.rewards import nl2sql_reward
+from think2sql.grpo.rewards.rewards_answer_content import nl2sql_reward
 from think2sql.logger import get_logger
 from think2sql.utils.data import get_dataset
 

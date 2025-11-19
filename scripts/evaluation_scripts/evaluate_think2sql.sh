@@ -29,16 +29,17 @@ source "${BASE_WORK}/.env"
 source "${BASE_WORK}/scripts/utils/utils.sh"
 
 
-MODEL_NAME=''
+# MODEL_NAME="${BASE_WORK}/model_trained/grpo/Qwen3-4B-Instruct-2507/dapo/bs256_ml4096_gen8_qwen-think4-b934d9d7_RL"
+MODEL_NAME="${BASE_WORK}/model_trained/grpo/Qwen3-1_7B/dapo/bs256_ml8092_gen16_qwen-think4-b304a262_RL"
 
-MAX_NEW_TOKENS=4096
+MAX_NEW_TOKENS=8096
 
 USER_PROMPT_NAME='base_think_user_prompt.jinja'
 SYSTEM_PROMPT_NAME='base_think_system_prompt.jinja'
 
 ENABLE_THINKING_MODE=''
 
-CUDA_VISIBLE_DEVICES='4' \
+CUDA_VISIBLE_DEVICES='4,6' \
 MODEL_NAME=$MODEL_NAME \
 MAX_NEW_TOKENS=$MAX_NEW_TOKENS \
 USER_PROMPT_NAME=$USER_PROMPT_NAME \

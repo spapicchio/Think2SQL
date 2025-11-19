@@ -65,6 +65,7 @@ LOGGING_DIR_TENSORBOARD="${BASE_WORK}/.tensorboard_logging/${JOB_ID}/"
 PROMPT_FOLDER="${BASE_WORK}/prompts"
 USER_PROMPT_NAME="base_think_user_prompt.jinja"
 SYSTEM_PROMPT_NAME="base_think_system_prompt.jinja"
+ENABLE_THINKING_MODE='False'
 
 # ----------- Dataset Params -----------
 DATASET_NAME="${BASE_WORK}/data/train_bird_processed_with_plan_cols_time.json"
@@ -76,15 +77,15 @@ LOSS_TYPE='dapo'
 REWARD_FUNCS="QATCH format"
 REWARD_WEIGHTS="0.9 0.1"
 LEARNING_RATE=1e-6
-NUM_EPOCHS=2
+NUM_EPOCHS=1
 BS=8
 ACCUMULATION_STEPS=8
 MAX_PROMPT_LENGTH=8000
-MAX_LENGTH=4096
+MAX_LENGTH=8092
 MAX_MODEL_LENGTH=$((MAX_PROMPT_LENGTH + MAX_LENGTH + 1024))
 
 TOTAL_BATCH_SIZE=$((BS * ACCUMULATION_STEPS * NUM_GPUS))
-NUM_GENERATIONS=8
+NUM_GENERATIONS=16
 NUM_GENERATIONS=$(python scripts/utils/get_num_generations.py --num_gpus "$NUM_GPUS" --bs "$BS" --max_generations "$NUM_GENERATIONS")
 log_section "NUM_GENERATIONS: ${NUM_GENERATIONS}" "${JOB_ID}"
 
@@ -137,7 +138,10 @@ LAUNCHER=(
         --model_name_or_path "${MODEL_BASE_PATH}"
         --output_dir "${OUTPUT_DIR}"
         --logging_dir "${LOGGING_DIR_TENSORBOARD}"
-        --run_name "${JOB_NAME}"
+        --run_name "${JOB_ID}"
+        --enable_thinking_mode "${ENABLE_THINKING_MODE}"
+        --scale_rewards 'none'
+        --mask_truncated_completions 'True'
         --log_completions True
         --num_completions_to_print 0
         --vllm_server_host "${VLLM_SERVER_HOST}"
