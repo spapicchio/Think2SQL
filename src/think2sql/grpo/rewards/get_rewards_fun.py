@@ -38,6 +38,21 @@ def get_reward_funcs(
     qatch_reward_fn.__name__ = "qatch_reward"
     # This is to make sure the function name is correct in the logs and can be used with lighteval
 
+    reward_sql_r1_fn = partial(
+        reward_sql_r1,
+        relative_db_base_path=script_args.relative_db_base_path,
+        evaluator=BirdEXEvaluator(),
+    )
+    reward_sql_r1_fn.__name__ = "reward_sql_r1"
+
+    arctic_sql_fn = partial(
+        reward_arctic_sql,
+        relative_db_base_path=script_args.relative_db_base_path,
+        evaluator=BirdEXEvaluator(),
+    )
+    arctic_sql_fn.__name__ = "reward_arctic_sql"
+
+
     REWARD_FUNCS_REGISTRY = {
         "EX": execution_accuracy_fn,
         "QATCH": qatch_reward_fn,
@@ -46,7 +61,7 @@ def get_reward_funcs(
         "multi_tag_format": multi_tag_format_reward,
         "table_recall": reward_selected_tables,
         "column_recall": reward_selected_columns,
-        "SQL-R1": reward_sql_r1,
+        "SQL-R1": reward_sql_r1_fn,
         'arctic_sql': reward_arctic_sql,
     }
 

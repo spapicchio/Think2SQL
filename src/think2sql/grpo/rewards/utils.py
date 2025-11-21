@@ -95,7 +95,7 @@ def utils_add_or_log(values: list[OutputTable | Exception], logger=None) -> list
     return output_
 
 
-def validate_response_structure_sql_r1(answer_in_completion: str, completion: str) -> tuple[str | None, bool]:
+def validate_response_structure_sql_r1(completion: str, think_tag, answer_tag) -> bool:
     """Performs comprehensive validation of response structure.
 
     Args:
@@ -108,16 +108,16 @@ def validate_response_structure_sql_r1(answer_in_completion: str, completion: st
 
     # Check required tags
     tags = {
-        'think_start': ('<think>', 1),
-        'think_end': ('</think>', 1),
-        'answer_start': ('<answer>', 1),
-        'answer_end': ('</answer>', 1)
+        'think_start': (f'<{think_tag}>', 1),
+        'think_end': (f'</{think_tag}>', 1),
+        'answer_start': (f'<{answer_tag}>', 1),
+        'answer_end': (f'</{answer_tag}>', 1)
     }
 
     positions = {}
     for tag_name, (tag_str, expected_count) in tags.items():
         count = completion.count(tag_str)
-        positions[tag_name] = pos = completion.find(tag_str)
+        positions[tag_name] = completion.find(tag_str)
 
         if count != expected_count:
             validation_passed = False
@@ -128,15 +128,7 @@ def validate_response_structure_sql_r1(answer_in_completion: str, completion: st
             positions['answer_start'] > positions['answer_end']):
         validation_passed = False
 
-    # Extract SQL from answer text
-    if validation_passed:
-        pred_sql = parse_sql_from_answer_sql_r1(answer_in_completion)
-        if not pred_sql:
-            validation_passed = False
-    else:
-        pred_sql = None
-
-    return pred_sql, validation_passed
+    return validation_passed
 
 
 def parse_sql_from_answer_sql_r1(answer_text: str) -> Optional[str]:
