@@ -34,13 +34,13 @@ if [[ -n "${SLURM_JOB_ID:-}" ]]; then
   setup_idris
   # label, dataset, db_path
   datasets=(
-    "SPIDER-test"       "data/processed/test_spider_processed_with_plan_cols_time.json"                "data/omnisql/spider/test_database"
-    "Bird-dev"          "data/processed/dev_bird_processed_with_plan_cols_time.json"                   "data/omnisql/bird/dev_20240627/dev_databases"
-    "SPIDER-DK"         "data/processed/dev_spider_dk_processed_with_plan_cols_time.json"              "data/omnisql/Spider-DK/database"
-    "SPIDER-SYN"        "data/processed/dev_spider_syn_processed_with_plan_cols_time.json"             "data/omnisql/spider/database"
-    "SPIDER-REALISTIC"  "data/processed/dev_spider_realistic_processed_with_plan_cols_time.json"       "data/omnisql/spider/database"
-    # "sciencebenchmark"  "data/processed/dev_sciencebenchmark_processed_with_plan_cols_time.json"       "data/omnisql/sciencebenchmark/databases"
-    # "EHRSQL"            "data/processed/dev_ehrsql_processed_with_plan_cols_time.json"                 "data/omnisql/EHRSQL/database"
+    "SPIDER-test"       "data/processed/test_spider_processed_with_plan_cols_time.json"                "data/spider/test_database"
+    "Bird-dev"          "data/processed/dev_bird_processed_with_plan_cols_time.json"                   "data/bird/dev_20240627/dev_databases"
+    "SPIDER-DK"         "data/processed/dev_spider_dk_processed_with_plan_cols_time.json"              "data/Spider-DK/database"
+    "SPIDER-SYN"        "data/processed/dev_spider_syn_processed_with_plan_cols_time.json"             "data/spider/database"
+    "SPIDER-REALISTIC"  "data/processed/dev_spider_realistic_processed_with_plan_cols_time.json"       "data/spider/database"
+    # "sciencebenchmark"  "data/processed/dev_sciencebenchmark_processed_with_plan_cols_time.json"       "data/sciencebenchmark/databases"
+    # "EHRSQL"            "data/processed/dev_ehrsql_processed_with_plan_cols_time.json"                 "data/EHRSQL/database"
   )
 else
   source "${BASE_WORK}/scripts/utils/utils_clenup_vllm_if_crash.sh"
@@ -48,8 +48,8 @@ else
   export CUDA_VISIBLE_DEVICES
     # label, dataset, db_path
   datasets=(
-    "SPIDER-test"       "data/omnisql/data/processed/test_spider_processed_with_plan_cols_time.json"                "data/omnisql/data/spider/test_database"
-    "Bird-dev"          "data/omnisql/data/processed/dev_bird_processed_with_plan_cols_time.json"                   "data/omnisql/data/bird/dev_20240627/dev_databases"
+    # "SPIDER-test"       "data/omnisql/data/processed/test_spider_processed_with_plan_cols_time.json"                "data/omnisql/data/spider/test_database"
+    # "Bird-dev"          "data/omnisql/data/processed/dev_bird_processed_with_plan_cols_time.json"                   "data/omnisql/data/bird/dev_20240627/dev_databases"
     "SPIDER-DK"         "data/omnisql/data/processed/dev_spider_dk_processed_with_plan_cols_time.json"              "data/omnisql/data/Spider-DK/database"
     "SPIDER-SYN"        "data/omnisql/data/processed/dev_spider_syn_processed_with_plan_cols_time.json"             "data/omnisql/data/spider/database"
     "SPIDER-REALISTIC"  "data/omnisql/data/processed/dev_spider_realistic_processed_with_plan_cols_time.json"       "data/omnisql/data/spider/database"
