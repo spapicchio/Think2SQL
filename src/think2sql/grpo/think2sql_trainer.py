@@ -96,7 +96,7 @@ class Think2SQLTrainer:
 
         tokenizer = get_tokenizer(self.model_args, self.training_args)
         model = get_model(self.model_args, self.training_args)
-        reward_funcs = get_reward_funcs(self.script_args)
+        reward_funcs = get_reward_funcs(self.script_args, num_of_generations=self.training_args.num_generations)
 
         dataset = dataset.map(
             build_messages,

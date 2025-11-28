@@ -18,8 +18,8 @@ source "${BASE_WORK}/scripts/utils/utils_clenup_vllm_if_crash.sh"
 
 # If one job crash and you want to start from it again,
 # set the JOB_ID to the one you want to resume from
-#JOB_ID='qwen-think4-6e12dc09'
-#export WANDB_RUN_ID='0czrmvbj'
+# JOB_ID='qwen-think4-fe7cde7d'
+# export WANDB_RUN_ID='pykkxz08'
 
 JOB_ID=${MY_SLURM_JOB_ID}
 
@@ -36,8 +36,10 @@ LOGGING_DIR_TENSORBOARD="${BASE_WORK}/.tensorboard_logging/${JOB_ID}/"
 PROMPT_FOLDER="${BASE_WORK}/prompts"
 # SYSTEM_PROMPT_NAME="base_think_system_multi_tag_prompt.jinja"
 # USER_PROMPT_NAME="mult_tag_user_prompt.jinja"
-USER_PROMPT_NAME="base_think_user_prompt.jinja"
 SYSTEM_PROMPT_NAME="base_think_system_prompt.jinja"
+USER_PROMPT_NAME="base_think_user_prompt.jinja"
+# SYSTEM_PROMPT_NAME="no_tag_system_prompt.jinja"
+# USER_PROMPT_NAME="no_tag_user_prompt.jinja"
 
 # ----------- Dataset Params -----------
 DATASET_NAME="${BASE_WORK}/data/omnisql/data/processed/train_bird_processed_with_plan_cols_time.json"
@@ -45,8 +47,8 @@ DB_PATH="${BASE_WORK}/data/omnisql/data/bird/train/train_databases"
 
 # ----------- Training Params -----------
 LOSS_TYPE='dapo'
-REWARD_FUNCS="EX format"
-REWARD_WEIGHTS="0.95 0.05"
+REWARD_FUNCS="qatch_small_update_with_fm"
+REWARD_WEIGHTS="1.0"
 LEARNING_RATE=1e-6
 NUM_EPOCHS=1
 BS=8
