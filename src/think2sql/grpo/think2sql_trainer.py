@@ -107,6 +107,7 @@ class Think2SQLTrainer:
                 "prompt_folder": self.script_args.prompt_folder,
             },
             num_proc=16,
+            load_from_cache_file=False
         )
 
         # store some examples to check the data processing
