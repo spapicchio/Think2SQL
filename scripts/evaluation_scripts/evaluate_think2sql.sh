@@ -30,16 +30,23 @@ source "${BASE_WORK}/scripts/utils/utils.sh"
 
 
 # MODEL_NAME="${BASE_WORK}/model_trained/grpo/Qwen3-4B-Instruct-2507/dapo/bs256_ml4096_gen8_qwen-think4-b934d9d7_RL"
-MODEL_NAME="${BASE_WORK}/model_trained/grpo/Qwen3-1_7B/dapo/bs256_ml8092_gen16_qwen-think4-b304a262_RL"
+# MODEL_NAME="${BASE_WORK}/model_trained/grpo/Qwen3-1_7B/dapo/bs256_ml8092_gen16_qwen-think4-b304a262_RL"
+# MODEL_NAME="${BASE_WORK}/model_trained/grpo/Qwen3-1_7B/dapo/bs256_ml8092_gen16_qwen-think4-cf82256c_RL"
+# MODEL_NAME="${BASE_WORK}/model_trained/grpo/Qwen3-1_7B/dapo/bs256_ml8092_gen16_qwen-think4-18facd9a_RL"
+# MODEL_NAME="${BASE_WORK}/model_trained/grpo/Qwen3-1_7B/dapo/bs256_ml8092_gen16_qwen-think4-c5cdacfe_RL"
+# MODEL_NAME="${BASE_WORK}/model_trained/grpo/Qwen3-1_7B/dapo/bs256_ml8092_gen16_qwen-think4-fe7cde7d_RL"
+MODEL_NAME="${BASE_WORK}/model_trained/dapo/Qwen3-1_7B/bs256_ml8092_gen16_qwen-think4-210bdc81_RL"
 
 MAX_NEW_TOKENS=8096
 
-USER_PROMPT_NAME='base_think_user_prompt.jinja'
-SYSTEM_PROMPT_NAME='base_think_system_prompt.jinja'
+# SYSTEM_PROMPT_NAME='base_think_system_prompt.jinja'
+# USER_PROMPT_NAME='base_think_user_prompt.jinja'
+SYSTEM_PROMPT_NAME="no_tag_system_prompt.jinja"
+USER_PROMPT_NAME="no_tag_user_prompt.jinja"
 
 ENABLE_THINKING_MODE=''
 
-CUDA_VISIBLE_DEVICES='4,6' \
+CUDA_VISIBLE_DEVICES='4' \
 MODEL_NAME=$MODEL_NAME \
 MAX_NEW_TOKENS=$MAX_NEW_TOKENS \
 USER_PROMPT_NAME=$USER_PROMPT_NAME \

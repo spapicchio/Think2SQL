@@ -1,5 +1,4 @@
 #!/bin/bash
-#!/bin/bash
 #SBATCH -A vno@h100
 #SBATCH -C h100
 #SBATCH --ntasks-per-node=1
@@ -29,20 +28,21 @@ source "${BASE_WORK}/.env"
 source "${BASE_WORK}/scripts/utils/utils.sh"
 
 
-MODEL_NAME='Qwen/Qwen3-0.6B'
-MODEL_NAME='Qwen/Qwen3-1.7B'
-MODEL_NAME='Qwen/Qwen3-4B-Thinking-2507'
-MODEL_NAME='Qwen/Qwen3-8B'
-MODEL_NAME='Qwen/Qwen3-14B'
+# MODEL_NAME='Qwen/Qwen3-0.6B'
+# MODEL_NAME='Qwen/Qwen3-1.7B'
+# MODEL_NAME='Qwen/Qwen3-4B-Thinking-2507'
+# MODEL_NAME='Qwen/Qwen3-8B'
+MODEL_NAME='Qwen/Qwen3-4B'
+# MODEL_NAME='Qwen/Qwen3-14B'
 
-MAX_NEW_TOKENS=20000
+MAX_NEW_TOKENS=10000
 
 USER_PROMPT_NAME="omnisql_user_prompt.jinja"
 SYSTEM_PROMPT_NAME=''
 
 ENABLE_THINKING_MODE='true'
 
-CUDA_VISIBLE_DEVICES='4' \
+CUDA_VISIBLE_DEVICES='0,1,2,3' \
 MODEL_NAME=$MODEL_NAME \
 MAX_NEW_TOKENS=$MAX_NEW_TOKENS \
 USER_PROMPT_NAME=$USER_PROMPT_NAME \

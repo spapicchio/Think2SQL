@@ -88,7 +88,7 @@ log_section "RL_MODEL_NAME: ${RL_MODEL_NAME}" "${JOB_ID}"
 MODEL_BASE='Qwen3-4B-Instruct-2507'
 MODEL_BASE_PATH="Qwen/Qwen3-4B-Instruct-2507"
 
-OUTPUT_DIR="${BASE_WORK}/model_trained/grpo/${MODEL_BASE}/${LOSS_TYPE}/${RL_MODEL_NAME}"
+OUTPUT_DIR="${BASE_WORK}/model_trained/${LOSS_TYPE}/${MODEL_BASE}/${RL_MODEL_NAME}"
 mkdir -p "${OUTPUT_DIR}"
 log_section "OUTPUT_DIR: ${OUTPUT_DIR}" "${JOB_ID}"
 

@@ -48,15 +48,16 @@ LOSS_TYPE='dapo'
 REWARD_FUNCS="EX format"
 REWARD_WEIGHTS="0.95 0.05"
 LEARNING_RATE=1e-6
-NUM_EPOCHS=2
+NUM_EPOCHS=1
 BS=8
 ACCUMULATION_STEPS=8
 MAX_PROMPT_LENGTH=8000
-MAX_LENGTH=4096
+# MAX_LENGTH=4096
+MAX_LENGTH=8092
 MAX_MODEL_LENGTH=$((MAX_PROMPT_LENGTH + MAX_LENGTH + 1024))
 
 TOTAL_BATCH_SIZE=$((BS * ACCUMULATION_STEPS * NUM_GPUS))
-NUM_GENERATIONS=8
+NUM_GENERATIONS=16
 NUM_GENERATIONS=$(python scripts/utils/get_num_generations.py --num_gpus "$NUM_GPUS" --bs "$BS" --max_generations "$NUM_GENERATIONS")
 echo "NUM_GENERATIONS: ${NUM_GENERATIONS}"
 
@@ -64,10 +65,14 @@ RL_MODEL_NAME="bs${TOTAL_BATCH_SIZE}_ml${MAX_LENGTH}_gen${NUM_GENERATIONS}_${JOB
 echo "RL_MODEL_NAME: ${RL_MODEL_NAME}"
 
 # MODEL_BASE='Qwen3-4B-Thinking-2507'
-MODEL_BASE='Qwen3-4B-Instruct-2507'
-MODEL_BASE_PATH="Qwen/${MODEL_BASE}"
+MODEL_BASE='Qwen3-1_7B'
+MODEL_BASE_PATH="Qwen/Qwen3-1.7B"
+# MODEL_BASE='Qwen3-4B'
+# MODEL_BASE_PATH="Qwen/Qwen3-4B"
 
-OUTPUT_DIR="${BASE_WORK}/model_trained/grpo/${MODEL_BASE}/${LOSS_TYPE}/${RL_MODEL_NAME}"
+ENABLE_THINKING_MODE='False'
+
+OUTPUT_DIR="${BASE_WORK}/model_trained/${LOSS_TYPE}/${MODEL_BASE}/${RL_MODEL_NAME}"
 mkdir -p "${OUTPUT_DIR}"
 
 # ----------- VLLM Server -----------
@@ -103,6 +108,9 @@ LAUNCHER=(
         --num_generations "${NUM_GENERATIONS}"
         --model_name_or_path "${MODEL_BASE_PATH}"
         --output_dir "${OUTPUT_DIR}"
+        --enable_thinking_mode "${ENABLE_THINKING_MODE}"
+        --scale_rewards 'none'
+        --mask_truncated_completions 'True'
 
         --logging_dir "${LOGGING_DIR_TENSORBOARD}"
         --run_name "${JOB_NAME}"
@@ -118,7 +126,9 @@ LAUNCHER=(
 log_section "Script: ${LAUNCHER[*]}" "${JOB_ID}"
 
 
-#TORCH_NCCL_ASYNC_ERROR_HANDLING=1 \
+#TORCH_NCCL_ASYNC_ERROR_HANDLING=1
+# WANDB_RUN_ID="$WANDB_RUN_ID" \
+# WANDB_RESUME=allow \
 CUDA_VISIBLE_DEVICES="${DEVICE_TRL}" \
 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
 TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD=1 \
