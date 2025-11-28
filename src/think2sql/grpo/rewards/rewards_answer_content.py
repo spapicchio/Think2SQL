@@ -154,7 +154,7 @@ def reward_small_update(completions: list[list[dict]],
     In case of Execution accuracy, the reward is 0.1 for valid execution and 1.0 for correct execution.
     In case of QATCH or other metrics, the reward is the metric value if greater than 0, otherwise 0.1 for valid execution.
     """
-    logger = get_logger("REWARD-")
+    logger = get_logger("REWARD-SU")
     start_time = time.perf_counter()
     hash_id = hash(start_time)
     start_time = time.perf_counter()
@@ -179,20 +179,19 @@ def reward_small_update(completions: list[list[dict]],
         scores.append(score)
 
     logger.info(
-        f"[REWARD-][END][{hash_id}] Completed in {time.perf_counter() - start_time:.2f} seconds"
+        f"[REWARD-SU][{hash_id}] Completed in {time.perf_counter() - start_time:.2f} seconds"
     )
     if include_format_reward:
         trainer_state: TrainerState = kwargs.get('trainer_state')
         max_steps = trainer_state.max_steps
         global_step = trainer_state.global_step
-        # if max_steps <= global_step * 0.4:
-        if max_steps <= 200:
-            logger.info(f"[{hash_id}] Applying format rewards at step {global_step}/{max_steps}")
+        if trainer_state.global_step <= int(trainer_state.max_steps * 0.3):
+            logger.info(f"[REWARD-SU][{hash_id}] Applying format rewards at step {global_step}/{max_steps}")
             # Apply the format rewards only for ~half of the training steps
             format_rewards = format_reward(completions)
             scores = [0.95 * score + 0.05 * fr for score, fr in zip(scores, format_rewards)]
         else:
-            logger.info(f"[{hash_id}] Skipping format rewards at step {global_step}/{max_steps}")
+            logger.info(f"[REWARD-SU][{hash_id}] Skipping format rewards at step {global_step}/{max_steps}")
     return scores
 
 
