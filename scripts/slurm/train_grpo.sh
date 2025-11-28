@@ -20,8 +20,11 @@ module load cuda/12.4.1
 nvidia-smi
 
 export BASE_WORK="${SCRATCH}/Think2SQL"
+export BASE_WORK_MODEL="${SCRATCH}/model_trained"
+export BASE_WORK_DATA="${SCRATCH}/data"
+
 cd $BASE_WORK
-export HF_HOME='${SCRATCH}/hf_cache'
+export HF_HOME="${SCRATCH}/hf_cache"
 
 source "${BASE_WORK}/.env"
 source "${BASE_WORK}/scripts/utils/utils.sh"
@@ -67,8 +70,8 @@ SYSTEM_PROMPT_NAME="base_think_system_prompt.jinja"
 ENABLE_THINKING_MODE='False'
 
 # ----------- Dataset Params -----------
-DATASET_NAME="${BASE_WORK}/data/train_bird_processed_with_plan_cols_time.json"
-DB_PATH="${BASE_WORK}/data/bird/train/train_databases"
+DATASET_NAME="${BASE_WORK_DATA}/data/train_bird_processed_with_plan_cols_time.json"
+DB_PATH="${BASE_WORK_DATA}/data/bird/train/train_databases"
 
 
 # ----------- Training Params -----------
@@ -96,7 +99,7 @@ MODEL_BASE_PATH="Qwen/${MODEL_BASE}"
 MODEL_BASE_PATH=$(python scripts/utils/get_model_path_hf_cache.py --cache_dir "${HF_HOME}" --model_id "${MODEL_BASE_PATH}")
 
 
-OUTPUT_DIR="${BASE_WORK}/model_trained/${LOSS_TYPE}/${MODEL_BASE}/${RL_MODEL_NAME}"
+OUTPUT_DIR="${BASE_WORK_MODEL}/${LOSS_TYPE}/${MODEL_BASE}/${RL_MODEL_NAME}"
 mkdir -p "${OUTPUT_DIR}"
 log_section "OUTPUT_DIR: ${OUTPUT_DIR}" "${JOB_ID}"
 
@@ -164,7 +167,7 @@ if [[ -n "${WORK}" ]]; then
     echo "Moving file into WORK: ${WORK}"
     # Strip BASE_WORK prefix to keep relative structure
     # Moving trained model
-    REL_PATH="${OUTPUT_DIR#${BASE_WORK}/}"
+    REL_PATH="${OUTPUT_DIR#${BASE_WORK_MODEL}/}"
     DEST="${WORK}/${REL_PATH}"
     cp_files "${DEST}" "${OUTPUT_DIR}" "${JOB_ID}"
     # Moving wandb logs
