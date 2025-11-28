@@ -1,7 +1,6 @@
 #!/bin/bash
 #SBATCH -A vno@a100
 #SBATCH -C a100
-#SBATCH --job-name=rl-exp-30
 #SBATCH --ntasks-per-node=1
 #SBATCH --gpus-per-node=2
 #SBATCH --output=./logs/rl/%j.out

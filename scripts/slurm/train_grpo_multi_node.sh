@@ -1,7 +1,6 @@
 #!/bin/bash
 #SBATCH -A vno@h100
 #SBATCH -C h100
-#SBATCH --job-name=rl-4B-ex
 #SBATCH --ntasks-per-node=1
 #SBATCH --gpus-per-node=4
 #SBATCH --output=./logs/rl/%j.out
@@ -21,6 +20,9 @@ module load cuda/12.4.1
 nvidia-smi
 
 export BASE_WORK="${SCRATCH}/Think2SQL"
+export BASE_WORK_MODEL="${SCRATCH}/model_trained"
+export BASE_WORK_DATA="${SCRATCH}/data"
+
 cd $BASE_WORK
 export HF_HOME="${SCRATCH}/hf_cache"
 
@@ -59,8 +61,8 @@ USER_PROMPT_NAME="base_think_user_prompt.jinja"
 SYSTEM_PROMPT_NAME="base_think_system_prompt.jinja"
 
 # ----------- Dataset Params -----------
-DATASET_NAME="${BASE_WORK}/data/train_bird_processed_with_plan_cols_time.json"
-DB_PATH="${BASE_WORK}/data/bird/train/train_databases"
+DATASET_NAME="${BASE_WORK_DATA}/train_bird_processed_with_plan_cols_time.json"
+DB_PATH="${BASE_WORK_DATA}/bird/train/train_databases"
 
 
 # ----------- Training Params -----------
@@ -88,7 +90,7 @@ log_section "RL_MODEL_NAME: ${RL_MODEL_NAME}" "${JOB_ID}"
 MODEL_BASE='Qwen3-4B-Instruct-2507'
 MODEL_BASE_PATH="Qwen/Qwen3-4B-Instruct-2507"
 
-OUTPUT_DIR="${BASE_WORK}/model_trained/${LOSS_TYPE}/${MODEL_BASE}/${RL_MODEL_NAME}"
+OUTPUT_DIR="${BASE_WORK_MODEL}/${LOSS_TYPE}/${MODEL_BASE}/${RL_MODEL_NAME}"
 mkdir -p "${OUTPUT_DIR}"
 log_section "OUTPUT_DIR: ${OUTPUT_DIR}" "${JOB_ID}"
 
@@ -171,7 +173,7 @@ if [[ -n "${WORK}" ]]; then
     echo "Moving file into WORK: ${WORK}"
     # Strip BASE_WORK prefix to keep relative structure
     # Moving trained model
-    REL_PATH="${OUTPUT_DIR#${BASE_WORK}/}"
+    REL_PATH="${OUTPUT_DIR#${BASE_WORK_MODEL}/}"
     DEST="${WORK}/${REL_PATH}"
     cp_files "${DEST}" "${OUTPUT_DIR}" "${JOB_ID}"
     # Moving wandb logs
