@@ -187,12 +187,12 @@ def reward_small_update(completions: list[list[dict]],
         global_step = trainer_state.global_step
         # if max_steps <= global_step * 0.4:
         if max_steps <= 200:
-            logger.info(f"Applying format rewards at step {global_step}/{max_steps}")
+            logger.info(f"[{hash_id}] Applying format rewards at step {global_step}/{max_steps}")
             # Apply the format rewards only for ~half of the training steps
             format_rewards = format_reward(completions)
             scores = [0.95 * score + 0.05 * fr for score, fr in zip(scores, format_rewards)]
         else:
-            logger.info(f"Skipping format rewards at step {global_step}/{max_steps}")
+            logger.info(f"[{hash_id}] Skipping format rewards at step {global_step}/{max_steps}")
     return scores
 
 
