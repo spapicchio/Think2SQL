@@ -36,6 +36,7 @@ dependencies = [
     "flashinfer-cubin>=0.4.1",
     "flash-attn==2.8.3",
     "duckdb>=1.5.0.dev94",
+    "langdetect>=1.0.9",
 ]
 
 [build-system]

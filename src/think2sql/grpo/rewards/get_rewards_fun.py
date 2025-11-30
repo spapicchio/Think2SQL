@@ -17,7 +17,7 @@ from think2sql.grpo.rewards.rewards_reasoning_content import (
     tag_count_reward,
     multi_tag_format_reward,
     reward_selected_tables,
-    reward_selected_columns,
+    reward_selected_columns, penalty_not_english, penalty_repetitions,
 )
 
 
@@ -121,6 +121,8 @@ def get_reward_funcs(
         "ex_complex": ex_complex_reward,
         "qatch_small_update_with_fm": qatch_small_update_with_fm,
         "ex_small_update_with_fm": ex_small_update_with_fm,
+        "penalty_not_english": penalty_not_english,
+        "penalty_repetitions": penalty_repetitions,
     }
 
     reward_funcs = [REWARD_FUNCS_REGISTRY[func] for func in script_args.reward_funcs]
