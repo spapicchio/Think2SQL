@@ -78,7 +78,7 @@ def get_reward_funcs(
         metric="cp_cr_tc",
         include_format_reward=True,
     )
-    qatch_small_update_with_fm.__name__ = "qatch_small_update"
+    qatch_small_update_with_fm.__name__ = "qatch_small_update_with_fm"
 
     ex_small_update_with_fm = partial(
         reward_small_update,
@@ -86,7 +86,7 @@ def get_reward_funcs(
         evaluator=BirdEXEvaluator(),
         include_format_reward=True
     )
-    ex_small_update_with_fm.__name__ = "ex_small_update"
+    ex_small_update_with_fm.__name__ = "ex_small_update_with_fm"
 
     qatch_complex_reward = partial(
         complex_reward,
