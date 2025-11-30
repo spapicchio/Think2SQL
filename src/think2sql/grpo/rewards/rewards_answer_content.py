@@ -175,8 +175,7 @@ def reward_small_update(completions: list[list[dict]],
         task = EvaluateTask(predictions=exec_pred, target=exec_target)
         score = evaluator.execute_metric(tasks=[task], **kwargs)[0]
         # if the score is greater than 0.1, keep it, otherwise give a small reward of 0.1 for having a valid execution
-        # scores.append(score if score > 0.1 else 0.1)
-        scores.append(score)
+        scores.append(score if score > 0.1 else 0.1)
 
     logger.info(
         f"[REWARD-SU][{hash_id}] Completed in {time.perf_counter() - start_time:.2f} seconds"
