@@ -3,7 +3,7 @@ import time
 
 from think2sql.grpo.rewards.utils import (
     utils_parse_model_response,
-    utils_extract_from_completion_with
+    utils_extract_from_completion_with,
 )
 from think2sql.logger import get_logger
 
@@ -146,6 +146,8 @@ def multi_tag_format_reward(completions, **kwargs):
 
 def penalty_not_english(completions, *, penalty=0.1, threshold=0.95, **kwargs):
     from langdetect import detect_langs, LangDetectException
+
+    completions = [utils_parse_model_response(val) for val in completions]
     scores = []
     for text in completions:
         if not text or len(text.strip()) < 5:
@@ -154,13 +156,13 @@ def penalty_not_english(completions, *, penalty=0.1, threshold=0.95, **kwargs):
 
         # Pre-cleaning: Remove SQL code blocks for language detection
         # We only want to check the reasoning/text, not the SQL keywords
-        text_without_code = re.sub(r'```sql.*?```', '', text, flags=re.DOTALL)
+        text_without_code = re.sub(r"```sql.*?```", "", text, flags=re.DOTALL)
         try:
             # Detected language
             probs = detect_langs(text_without_code)
             # Check the top result
             top_lang = probs[0]
-            if top_lang.lang == 'en' and top_lang.prob >= threshold:
+            if top_lang.lang == "en" and top_lang.prob >= threshold:
                 score = 0.0  # Good
             else:
                 score = -penalty
@@ -171,11 +173,13 @@ def penalty_not_english(completions, *, penalty=0.1, threshold=0.95, **kwargs):
     return scores
 
 
-def penalty_repetitions(completion_ids, *, max_penalty=0.1, n_gram_size=3, threshold=0.9, **kwargs):
+def penalty_repetitions(
+        completion_ids, *, max_penalty=0.1, n_gram_size=3, threshold=0.9, **kwargs
+):
     scores = []
     for seq in completion_ids:
         # 1. Convert tensor to list if necessary
-        if hasattr(seq, 'tolist'):
+        if hasattr(seq, "tolist"):
             seq = seq.tolist()
 
         # 2. Filter out padding (usually -100 or pad_token_id) if present
@@ -189,7 +193,9 @@ def penalty_repetitions(completion_ids, *, max_penalty=0.1, n_gram_size=3, thres
 
         # 4. Generate N-grams (tuples of integers)
         # e.g., [(101, 204, 305), (204, 305, 999)...]
-        ngrams = [tuple(seq[i:i + n_gram_size]) for i in range(len(seq) - n_gram_size + 1)]
+        ngrams = [
+            tuple(seq[i: i + n_gram_size]) for i in range(len(seq) - n_gram_size + 1)
+        ]
 
         # 5. Calculate Ratio
         unique_ngrams = len(set(ngrams))
