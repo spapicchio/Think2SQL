@@ -1,5 +1,8 @@
 import re
 import time
+from collections import Counter
+
+from transformers import AutoTokenizer
 
 from think2sql.grpo.rewards.utils import (
     utils_parse_model_response,
@@ -9,10 +12,10 @@ from think2sql.logger import get_logger
 
 
 def reward_selected_tables(
-        completions: list[list[dict]],
-        tbls_in_query: list[list[str]],
-        *args,
-        **kwargs,
+    completions: list[list[dict]],
+    tbls_in_query: list[list[str]],
+    *args,
+    **kwargs,
 ) -> list[float]:
     """Calculate the recall of the tables in the completions"""
     logger = get_logger("REWARD_TABLES")
@@ -48,10 +51,10 @@ def reward_selected_tables(
 
 
 def reward_selected_columns(
-        completions: list[list[dict]],
-        cols_in_query: list[list[str]],
-        *args,
-        **kwargs,
+    completions: list[list[dict]],
+    cols_in_query: list[list[str]],
+    *args,
+    **kwargs,
 ) -> list[float]:
     """Calculate the recall of the cols in the completions"""
     logger = get_logger("REWARD_TABLES")
@@ -144,8 +147,13 @@ def multi_tag_format_reward(completions, **kwargs):
     return [1.0 if match else 0.0 for match in matches]
 
 
-def penalty_not_english(completions, *, penalty=0.1, threshold=0.95, **kwargs):
+def penalty_not_english(completions, *, penalty=0.25, threshold=0.90, **kwargs):
     from langdetect import detect_langs, LangDetectException
+
+    logger = get_logger("PENALTY-LANG")
+    start_time = time.perf_counter()
+    hash_id = hash(start_time)
+    logger.info(f"[PENALTY-LANG][{hash_id}] Starting language penalty evaluation.")
 
     completions = [utils_parse_model_response(val) for val in completions]
     scores = []
@@ -163,20 +171,30 @@ def penalty_not_english(completions, *, penalty=0.1, threshold=0.95, **kwargs):
             # Check the top result
             top_lang = probs[0]
             if top_lang.lang == "en" and top_lang.prob >= threshold:
-                score = 0.0  # Good
+                scores.append(0.0)  # Good
             else:
-                score = -penalty
+                scores.append(-penalty)
         except LangDetectException:
             # If detection fails (e.g. text is just numbers), usually safe to ignore
-            score = 0.0
-        scores.append(score)
+            scores.append(0.0)
+            logger.warning(f"Language detection failed for text: {text_without_code}")
+    elapsed_time = time.perf_counter() - start_time
+    logger.info(
+        f"[PENALTY-LANG][{hash_id}] Completed language penalty evaluation in {elapsed_time:.2f} seconds."
+    )
     return scores
 
 
 def penalty_repetitions(
-        completion_ids, *, max_penalty=0.1, n_gram_size=3, threshold=0.9, **kwargs
+    completion_ids, *, max_penalty=0.1, n_gram_size=5, threshold=0.5, **kwargs
 ):
     scores = []
+    logger = get_logger("PENALTY-REPETITIONS")
+    start_time = time.perf_counter()
+    hash_id = hash(start_time)
+    logger.info(
+        f"[PENALTY-REPETITION][{hash_id}] Starting repetition penalty evaluation."
+    )
     for seq in completion_ids:
         # 1. Convert tensor to list if necessary
         if hasattr(seq, "tolist"):
@@ -194,19 +212,21 @@ def penalty_repetitions(
         # 4. Generate N-grams (tuples of integers)
         # e.g., [(101, 204, 305), (204, 305, 999)...]
         ngrams = [
-            tuple(seq[i: i + n_gram_size]) for i in range(len(seq) - n_gram_size + 1)
+            tuple(seq[i : i + n_gram_size]) for i in range(len(seq) - n_gram_size + 1)
         ]
 
         # 5. Calculate Ratio
         unique_ngrams = len(set(ngrams))
         total_ngrams = len(ngrams)
-
         ratio = unique_ngrams / total_ngrams if total_ngrams > 0 else 0.0
-
         # 6. Apply Penalty
         # If ratio is 0.4 (very repetitive), penalty is -0.6
         if ratio < threshold:
             scores.append(max(-max_penalty, ratio - 1.0))
         else:
             scores.append(0.0)
+    elapsed_time = time.perf_counter() - start_time
+    logger.info(
+        f"[PENALTY-REPETITION][{hash_id}] Completed repetition penalty evaluation in {elapsed_time:.2f} seconds."
+    )
     return scores

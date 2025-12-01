@@ -184,7 +184,7 @@ def reward_small_update(completions: list[list[dict]],
         trainer_state: TrainerState = kwargs.get('trainer_state')
         max_steps = trainer_state.max_steps
         global_step = trainer_state.global_step
-        if trainer_state.global_step <= int(trainer_state.max_steps * 0.3):
+        if trainer_state.global_step <= int(trainer_state.max_steps * 0.5):
             logger.info(f"[REWARD-SU][{hash_id}] Applying format rewards at step {global_step}/{max_steps}")
             # Apply the format rewards only for ~half of the training steps
             format_rewards = format_reward(completions)
