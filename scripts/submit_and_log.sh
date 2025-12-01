@@ -36,7 +36,7 @@ else
 fi
 
 
-MY_SLURM_JOB_ID="${JOB_NAME}-${FAKE_JOB_ID}"
+MY_SLURM_JOB_ID="${FAKE_JOB_ID}"
 
 
 DATE_DIR="$(date +%Y-%m-%d)"
@@ -65,16 +65,17 @@ if [ -z "${2:-}" ]; then
 else
   JOB_OUTPUT=$(sbatch -J "$2" "${FAKE_JOB_PATH}")
   MY_SLURM_JOB_ID=$(echo "$JOB_OUTPUT" | awk '{print $4}')
+  log_section "[SUBMIT_AND_LOG] Submitted job with JOB Name: $2 and SLURM Job ID: ${MY_SLURM_JOB_ID}" "${MY_SLURM_JOB_ID}"
 
   LOG_FOLDER="${LOG_FOLDER}/${TIME_TAG}-${MY_SLURM_JOB_ID}"
   mkdir -p $LOG_FOLDER
   SLURM_LOG="${BASE_WORK}/logs/rl/${MY_SLURM_JOB_ID}.out"
   ln -s "$SLURM_LOG" "${LOG_FOLDER}/all.out"
 
-  NEW_PATH="${DEST_DIR}/${TIME_TAG}-${JOB_NAME}-${MY_SLURM_JOB_ID}.sh"
+  NEW_PATH="${DEST_DIR}/${TIME_TAG}-${MY_SLURM_JOB_ID}.sh"
   mv "$FAKE_JOB_PATH" "${NEW_PATH}"
   FAKE_JOB_PATH=$NEW_PATH
 fi
 
 log_section "[SUBMIT_AND_LOG] TMUX log ${LOG_FOLDER}/all.out" "${MY_SLURM_JOB_ID}"
-log_section "[SUBMIT_AND_LOG] created file $FAKE_JOB_PATH" "${JOB_NAME}-${MY_SLURM_JOB_ID}"
+log_section "[SUBMIT_AND_LOG] created file $FAKE_JOB_PATH" "${MY_SLURM_JOB_ID}"
