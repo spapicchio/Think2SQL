@@ -67,14 +67,14 @@ DB_PATH="${BASE_WORK_DATA}/bird/train/train_databases"
 
 # ----------- Training Params -----------
 LOSS_TYPE='dapo'
-REWARD_FUNCS="EX format"
-REWARD_WEIGHTS="0.95 0.05"
+REWARD_FUNCS="qatch_small_update_with_fm"
+REWARD_WEIGHTS="1.0"
 LEARNING_RATE=1e-6
 NUM_EPOCHS=1
 BS=8
 ACCUMULATION_STEPS=8
 MAX_PROMPT_LENGTH=8000
-MAX_LENGTH=8092
+MAX_LENGTH=4096
 MAX_MODEL_LENGTH=$((MAX_PROMPT_LENGTH + MAX_LENGTH + 1024))
 
 TOTAL_BATCH_SIZE=$((BS * ACCUMULATION_STEPS * WORLD_SIZE))
@@ -87,8 +87,8 @@ ENABLE_THINKING_MODE='False'
 RL_MODEL_NAME="bs${TOTAL_BATCH_SIZE}_ml${MAX_LENGTH}_gen${NUM_GENERATIONS}_${JOB_ID}_RL"
 log_section "RL_MODEL_NAME: ${RL_MODEL_NAME}" "${JOB_ID}"
 
-MODEL_BASE='Qwen3-4B-Instruct-2507'
-MODEL_BASE_PATH="Qwen/Qwen3-4B-Instruct-2507"
+MODEL_BASE='Qwen3-8B'
+MODEL_BASE_PATH="Qwen/Qwen3-8B"
 
 OUTPUT_DIR="${BASE_WORK_MODEL}/${LOSS_TYPE}/${MODEL_BASE}/${RL_MODEL_NAME}"
 mkdir -p "${OUTPUT_DIR}"
@@ -139,6 +139,7 @@ TRAINING_PARAMS=(
         --vllm_server_port "${VLLM_SERVER_PORT}"
         --save_steps 5
         --save_total_limit 1
+        --local_files_only True
         --ddp_timeout=7200  # https://github.com/huggingface/open-r1/issues/160
 )
 log_section "Script: ${TRAINING_PARAMS[*]}" "${JOB_ID}"

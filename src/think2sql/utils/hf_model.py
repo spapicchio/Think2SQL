@@ -14,6 +14,8 @@ def get_tokenizer(model_args: ModelConfig, training_args: SFTConfig | GRPOConfig
         model_args.model_name_or_path,
         revision=model_args.model_revision,
         trust_remote_code=model_args.trust_remote_code,
+        local_files_only=training_args.local_files_only,
+        
     )
     logger.info(f"Tokenizer loaded for: {model_args.model_name_or_path}")
 
@@ -39,6 +41,7 @@ def get_model(model_args: ModelConfig, training_args: SFTConfig | GRPOConfig) ->
         use_cache=False if training_args.gradient_checkpointing else True,
         device_map=get_kbit_device_map() if quantization_config is not None else None,
         quantization_config=quantization_config,
+        local_files_only=training_args.local_files_only,
     )
     model = AutoModelForCausalLM.from_pretrained(
         model_args.model_name_or_path,

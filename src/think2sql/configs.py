@@ -202,6 +202,12 @@ class GRPOConfig(trl.GRPOConfig):
         default=None,
         metadata={"help": "Whether to enable the thinking model for reasoning models."},
     )
+    
+    local_files_only: bool = field(
+        default=False,
+        metadata={"help": "Whether to only use local files for the model and tokenizer."},
+    )   
+
 
     def __post_init__(self):
         super().__post_init__()
@@ -273,6 +279,10 @@ class SFTConfig(trl.SFTConfig):
         default=None,
         metadata={"help": "The group to store runs under."},
     )
+    local_files_only: bool = field(
+        default=False,
+        metadata={"help": "Whether to only use local files for the model and tokenizer."},
+    )   
 
 
 @dataclass
