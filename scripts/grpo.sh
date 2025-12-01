@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --job-name=qwen-think4
-DEVICE_TRL='1,2,3,4'
+DEVICE_TRL='0,1,2,3'
 NUM_GPUS=4
 
-DEVICE_VLLM='5,6'
+DEVICE_VLLM='4,6'
 NUM_GPU_RESERVED_VLLM=2
 
 echo "NUM_GPUS: ${NUM_GPUS}"
@@ -47,8 +47,8 @@ DB_PATH="${BASE_WORK}/data/omnisql/data/bird/train/train_databases"
 
 # ----------- Training Params -----------
 LOSS_TYPE='dapo'
-REWARD_FUNCS="qatch_small_update_with_fm"
-REWARD_WEIGHTS="1.0"
+REWARD_FUNCS="qatch_small_update_with_fm penalty_not_english penalty_repetitions"
+REWARD_WEIGHTS="1.0 1.0 1.0"
 LEARNING_RATE=1e-6
 NUM_EPOCHS=1
 BS=8
@@ -120,8 +120,8 @@ LAUNCHER=(
         --num_completions_to_print 0
         --vllm_server_host "${VLLM_SERVER_HOST}"
         --vllm_server_port "${VLLM_SERVER_PORT}"
-        --save_steps 5
-        --save_total_limit 1
+        --save_steps 50
+        --save_total_limit 2
         --ddp_timeout=7200  # https://github.com/huggingface/open-r1/issues/160
 )
 

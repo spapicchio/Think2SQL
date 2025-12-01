@@ -137,8 +137,8 @@ TRAINING_PARAMS=(
         --num_completions_to_print 0
         --vllm_server_host "${VLLM_NODE}"
         --vllm_server_port "${VLLM_SERVER_PORT}"
-        --save_steps 5
-        --save_total_limit 1
+        --save_steps 50
+        --save_total_limit 2
         --local_files_only True
         --ddp_timeout=7200  # https://github.com/huggingface/open-r1/issues/160
 )
