@@ -131,6 +131,7 @@ TRAINING_PARAMS=(
         --scale_rewards 'none'
         --mask_truncated_completions 'True'
 
+        --run_name "${SLURM_JOB_NAME}"
         --logging_dir "${LOGGING_DIR_TENSORBOARD}"
         --run_name "${JOB_ID}"
         --log_completions True
