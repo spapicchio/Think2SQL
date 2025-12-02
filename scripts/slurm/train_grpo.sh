@@ -96,8 +96,7 @@ log_section "RL_MODEL_NAME: ${RL_MODEL_NAME}" "${JOB_ID}"
 
 MODEL_BASE='Qwen3-4B-Instruct-2507'
 MODEL_BASE_PATH="Qwen/${MODEL_BASE}"
-MODEL_BASE_PATH=$(python scripts/utils/get_model_path_hf_cache.py --cache_dir "${HF_HOME}" --model_id "${MODEL_BASE_PATH}")
-
+MODEL_BASE_PATH=$(python scripts/utils/get_model_path_hf_cache.py --model_id "$MODEL_BASE_PATH")
 
 OUTPUT_DIR="${BASE_WORK_MODEL}/${LOSS_TYPE}/${MODEL_BASE}/${RL_MODEL_NAME}"
 mkdir -p "${OUTPUT_DIR}"
