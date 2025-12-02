@@ -25,9 +25,9 @@ def reward_sql_r1(completions: list[list[dict]],
                   ) -> list[float]:
     # The reward goes from 0 to 6
     # The code is taken from https://github.com/DataArcTech/SQL-R1/blob/d3645cc72820b27ed09fdda65f1bb6494c80b37e/verl/utils/reward_score/synsql.py#L118
-    logger = get_logger("REWARD_SQL-R1")
     start_time = time.perf_counter()
     hash_id = hash(start_time)
+    logger = get_logger(f"REWARD_SQL-R1-{hash_id}")
     start_time = time.perf_counter()
     model_predictions = [utils_parse_model_response(val) for val in completions]
 
@@ -87,7 +87,7 @@ def reward_sql_r1(completions: list[list[dict]],
         scores.append(final_score)
 
     logger.info(
-        f"[REWARD_SQL-R1][END][{hash_id}] Completed in {time.perf_counter() - start_time:.2f} seconds"
+        f"Completed in {time.perf_counter() - start_time:.2f} seconds"
     )
     return scores
 
@@ -101,10 +101,9 @@ def reward_arctic_sql(completions: list[list[dict]],
                       relative_db_base_path: str,
                       **kwargs,
                       ) -> list[float]:
-    logger = get_logger("REWARD-Arctic-sql")
     start_time = time.perf_counter()
     hash_id = hash(start_time)
-    start_time = time.perf_counter()
+    logger = get_logger(f"REWARD-Arctic-sql-{hash_id}")
     model_predictions = [utils_parse_model_response(val) for val in completions]
     target_sql_results, model_predictions_results = utils_execute_target_and_pred_sql(
         db_ids=db_id,
@@ -132,7 +131,7 @@ def reward_arctic_sql(completions: list[list[dict]],
         else:
             scores.append(0)
     logger.info(
-        f"[REWARD-Arctic-sql][END][{hash_id}] Completed in {time.perf_counter() - start_time:.2f} seconds"
+        f"Completed in {time.perf_counter() - start_time:.2f} seconds"
     )
     return scores
 
@@ -154,10 +153,9 @@ def reward_small_update(completions: list[list[dict]],
     In case of Execution accuracy, the reward is 0.1 for valid execution and 1.0 for correct execution.
     In case of QATCH or other metrics, the reward is the metric value if greater than 0, otherwise 0.1 for valid execution.
     """
-    logger = get_logger("REWARD-SU")
     start_time = time.perf_counter()
     hash_id = hash(start_time)
-    start_time = time.perf_counter()
+    logger = get_logger(f"REWARD-SU-{hash_id}")
     model_predictions = [utils_parse_model_response(val) for val in completions]
     target_sql_results, model_predictions_results = utils_execute_target_and_pred_sql(
         db_ids=db_id,
@@ -178,19 +176,19 @@ def reward_small_update(completions: list[list[dict]],
         scores.append(score if score > 0.1 else 0.1)
 
     logger.info(
-        f"[REWARD-SU][{hash_id}] Completed in {time.perf_counter() - start_time:.2f} seconds"
+        f"Completed in {time.perf_counter() - start_time:.2f} seconds"
     )
     if include_format_reward:
         trainer_state: TrainerState = kwargs.get('trainer_state')
         max_steps = trainer_state.max_steps
         global_step = trainer_state.global_step
         if trainer_state.global_step <= int(trainer_state.max_steps * 0.5):
-            logger.info(f"[REWARD-SU][{hash_id}] Applying format rewards at step {global_step}/{max_steps}")
+            logger.info(f"[{hash_id}] Applying format rewards at step {global_step}/{max_steps}")
             # Apply the format rewards only for ~half of the training steps
             format_rewards = format_reward(completions)
             scores = [0.95 * score + 0.05 * fr for score, fr in zip(scores, format_rewards)]
         else:
-            logger.info(f"[REWARD-SU][{hash_id}] Skipping format rewards at step {global_step}/{max_steps}")
+            logger.info(f"Skipping format rewards at step {global_step}/{max_steps}")
     return scores
 
 
@@ -205,9 +203,9 @@ def complex_reward(completions: list[list[dict]],
                    **kwargs,
                    ) -> list[float]:
     """Each reward gets B * NUM_GENERATIONS completions, where B is the batch for each GPU without gradient accumulation:"""
-    logger = get_logger("REWARD-Len-Penalty")
     start_time = time.perf_counter()
     hash_id = hash(start_time)
+    logger = get_logger(f"REWARD-Len-Penalty-{hash_id}")
     start_time = time.perf_counter()
     model_predictions = [utils_parse_model_response(val) for val in completions]
     target_sql_results, model_predictions_results = utils_execute_target_and_pred_sql(
@@ -232,7 +230,7 @@ def complex_reward(completions: list[list[dict]],
     scores = apply_dynamic_len_penalty(model_predictions, scores, num_of_generations, penalty_strength=0.1)
 
     logger.info(
-        f"[REWARD-Len-Penalty][END][{hash_id}] Completed in {time.perf_counter() - start_time:.2f} seconds"
+        f"Completed in {time.perf_counter() - start_time:.2f} seconds"
     )
     return scores
 
@@ -320,12 +318,11 @@ def nl2sql_reward(
         **kwargs,
 ) -> list[float]:
     # run in parallel predictions and targets
-    logger = get_logger("REWARD_SQLS")
     start_time = time.perf_counter()
     hash_id = hash(start_time)
-    start_time = time.perf_counter()
+    logger = get_logger(f"REWARD_SQLS-{hash_id}")
+    
     model_predictions = [utils_parse_model_response(val) for val in completions]
-
     target_sql_results, model_predictions_results = utils_execute_target_and_pred_sql(
         db_ids=db_id,
         target_sqls=target_sql,
@@ -345,6 +342,6 @@ def nl2sql_reward(
     scores = evaluator.execute_metric(tasks=tasks, *args, **kwargs)
 
     logger.info(
-        f"[REWARD_SQLS][END][{hash_id}] Completed in {time.perf_counter() - start_time:.2f} seconds"
+        f"Completed in {time.perf_counter() - start_time:.2f} seconds"
     )
     return scores

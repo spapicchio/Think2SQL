@@ -15,11 +15,11 @@ def reward_selected_tables(
     **kwargs,
 ) -> list[float]:
     """Calculate the recall of the tables in the completions"""
-    logger = get_logger("REWARD_TABLES")
     start_time = time.perf_counter()
     hash_id = hash(start_time)
+    logger = get_logger(f"REWARD_TABLES-{hash_id}")
     logger.info(
-        f"[REWARD_TABLES][START][{hash_id}] Calculating reward_selected_tables for {len(completions)} completions"
+        f"Calculating reward_selected_tables for {len(completions)} completions"
     )
     model_predictions = [utils_parse_model_response(val) for val in completions]
 
@@ -42,7 +42,7 @@ def reward_selected_tables(
         reward = len(intersection) / len(true_tbls_set) if true_tbls_set else 0.0
         rewards.append(reward)
     logger.info(
-        f"[REWARD_TABLES][END][{hash_id}] Completed in {time.perf_counter() - start_time:.2f} seconds"
+        f"Completed in {time.perf_counter() - start_time:.2f} seconds"
     )
     return rewards
 
@@ -54,11 +54,11 @@ def reward_selected_columns(
     **kwargs,
 ) -> list[float]:
     """Calculate the recall of the cols in the completions"""
-    logger = get_logger("REWARD_TABLES")
     start_time = time.perf_counter()
     hash_id = hash(start_time)
+    logger = get_logger(f"REWARD_COLS-{hash_id}")
     logger.info(
-        f"[REWARD_COLS][START][{hash_id}] Calculating reward_selected_columns for {len(completions)} completions"
+        f"Calculating reward_selected_columns for {len(completions)} completions"
     )
     model_predictions = [utils_parse_model_response(val) for val in completions]
     assert len(model_predictions) == len(cols_in_query), (
@@ -78,7 +78,7 @@ def reward_selected_columns(
         reward = len(intersection) / len(true_cols_set) if true_cols_set else 0.0
         rewards.append(reward)
     logger.info(
-        f"[REWARD_COLS][END][{hash_id}] Completed in {time.perf_counter() - start_time:.2f} seconds"
+        f"Completed in {time.perf_counter() - start_time:.2f} seconds"
     )
     return rewards
 
@@ -120,8 +120,13 @@ def format_reward(completions, **kwargs):
 
 def penalty_format_reward(completions, **kwargs):
     """same as format reward but always zero and only penalty in negative rewards"""
+    start_time = time.perf_counter()
+    hash_id = hash(start_time)
+    logger = get_logger(f"PENALTY_FORMAT-{hash_id}")
+
     matches = format_reward(completions, **kwargs)
-    return [0.0 if match else -1.0 for match in matches]
+    logger.info(f"Applying format penalty to {len([m for m in matches if m!=1.0])}/{len(completions)} completions")
+    return [0.0 if match==1.0 else -1.0 for match in matches]
 
 def multi_tag_format_reward(completions, **kwargs):
     """
@@ -152,10 +157,10 @@ def multi_tag_format_reward(completions, **kwargs):
 def penalty_not_english(completions, *, threshold=0.90, **kwargs):
     from langdetect import detect_langs, LangDetectException
 
-    logger = get_logger("PENALTY-LANG")
     start_time = time.perf_counter()
     hash_id = hash(start_time)
-    logger.info(f"[PENALTY-LANG][{hash_id}] Starting language penalty evaluation.")
+    logger = get_logger(f"PENALTY-Not-EN-{hash_id}")
+    logger.info(f"Starting language penalty evaluation.")
 
     completions = [utils_parse_model_response(val) for val in completions]
     scores = []
@@ -182,7 +187,7 @@ def penalty_not_english(completions, *, threshold=0.90, **kwargs):
             logger.warning(f"Language detection failed for text: {text_without_code}")
     elapsed_time = time.perf_counter() - start_time
     logger.info(
-        f"[PENALTY-LANG][{hash_id}] Completed language penalty evaluation in {elapsed_time:.2f} seconds."
+        f"Completed language penalty evaluation in {elapsed_time:.2f} seconds."
     )
     return scores
 
@@ -191,12 +196,10 @@ def penalty_repetitions(
         completion_ids, *, n_gram_size=5, threshold=0.5, **kwargs
 ):
     scores = []
-    logger = get_logger("PENALTY-REPETITIONS")
     start_time = time.perf_counter()
     hash_id = hash(start_time)
-    logger.info(
-        f"[PENALTY-REPETITION][{hash_id}] Starting repetition penalty evaluation."
-    )
+    logger = get_logger(f"PENALTY-REPETITIONS-{hash_id}")
+    logger.info(f"Starting repetition penalty evaluation.")
     for seq in completion_ids:
         # 1. Convert tensor to list if necessary
         if hasattr(seq, "tolist"):
@@ -228,7 +231,5 @@ def penalty_repetitions(
         else:
             scores.append(0.0)
     elapsed_time = time.perf_counter() - start_time
-    logger.info(
-        f"[PENALTY-REPETITION][{hash_id}] Completed repetition penalty evaluation in {elapsed_time:.2f} seconds."
-    )
+    logger.info(f"Completed repetition penalty evaluation in {elapsed_time:.2f} seconds.")
     return scores
