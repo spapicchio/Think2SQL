@@ -147,11 +147,11 @@ def reward_small_update(completions: list[list[dict]],
                         **kwargs,
                         ) -> list[float]:
     """
-    The reward is 0 only when the execution fails, 0 is given only when the execution fails to strongly discourage
+    The reward is 0 only when the execution fails, 0 is given to strongly discourage
     invalid SQL queries. If the execution is successful, the reward is the metric chosen to evaluate the SQL.
 
     In case of Execution accuracy, the reward is 0.1 for valid execution and 1.0 for correct execution.
-    In case of QATCH or other metrics, the reward is the metric value if greater than 0, otherwise 0.1 for valid execution.
+    In case of QATCH or other metrics, the reward is the metric value if greater than 0.1, otherwise 0.1 for valid execution.
     """
     start_time = time.perf_counter()
     hash_id = hash(start_time)

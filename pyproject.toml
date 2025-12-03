@@ -14,7 +14,7 @@ dependencies = [
     "vllm==0.10.2",
     "ray",
     "accelerate>=1.4.0",
-    "transformers>=4.56.0",
+    "transformers>=4.56.0,<5.0.0",
     "trl>=0.23.0",
     "more_itertools",
     "datasets>=4.0.0",

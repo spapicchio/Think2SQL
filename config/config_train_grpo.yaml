@@ -80,8 +80,8 @@ reward_weights:
   - 0.85
   - 0.15
 save_strategy: "steps"
-save_steps: 5
-save_total_limit: 1
+save_steps: 50
+save_total_limit: 2
 seed: 42
 wandb_log_unique_prompts: true
 
