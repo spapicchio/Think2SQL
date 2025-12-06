@@ -23,15 +23,17 @@ echo "[SUBMIT_AND_LOG] Using BASE_WORK=${BASE_WORK}"
 source "${BASE_WORK}/scripts/utils/utils.sh"
 
 JOB_SCRIPT="$1"
-JOB_NAME=$(awk -F= '/^#SBATCH[[:space:]]+--job-name=/ {print $2; exit}' "$JOB_SCRIPT")
+# JOB_NAME=$(awk -F= '/^#SBATCH[[:space:]]+--job-name=/ {print $2; exit}' "$JOB_SCRIPT")
 
 # copy and then launch the file
 # Generate a fake job ID based on the current timestamp and a hash
 if [[ -z "${SLURM_JOB_ID:-}" ]]; then
   FAKE_JOB_ID=$(date +%s | sha256sum | head -c 8)
+  JOB_NAME="atlas_${FAKE_JOB_ID}"
   echo "[SUBMIT_AND_LOG] Generated fake job ID for date $(date +%s): $FAKE_JOB_ID"
 else
   FAKE_JOB_ID="$SLURM_JOB_ID"
+  JOB_NAME="slurm_job_${FAKE_JOB_ID}"
   echo "[SUBMIT_AND_LOG] Using SLURM_JOB_ID as job ID: $FAKE_JOB_ID"
 fi
 

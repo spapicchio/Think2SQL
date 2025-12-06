@@ -1,5 +1,4 @@
 #!/bin/bash
-#SBATCH --job-name=qwen-think4
 DEVICE_TRL='0,1,2,3'
 NUM_GPUS=4
 
@@ -18,8 +17,8 @@ source "${BASE_WORK}/scripts/utils/utils_clenup_vllm_if_crash.sh"
 
 # If one job crash and you want to start from it again,
 # set the JOB_ID to the one you want to resume from
-# JOB_ID='qwen-think4-fe7cde7d'
-# export WANDB_RUN_ID='pykkxz08'
+# JOB_ID='aba0bebc'
+# export WANDB_RUN_ID='mrondefv'
 
 JOB_ID=${MY_SLURM_JOB_ID}
 
@@ -47,15 +46,15 @@ DB_PATH="${BASE_WORK}/data/omnisql/data/bird/train/train_databases"
 
 # ----------- Training Params -----------
 LOSS_TYPE='dapo'
-REWARD_FUNCS="qatch_small_update_with_fm penalty_not_english penalty_repetitions"
-REWARD_WEIGHTS="1.0 1.0 1.0"
+REWARD_FUNCS="QATCH format"
+REWARD_WEIGHTS="0.95 0.05"
 LEARNING_RATE=1e-6
 NUM_EPOCHS=1
 BS=8
 ACCUMULATION_STEPS=8
 MAX_PROMPT_LENGTH=8000
-# MAX_LENGTH=4096
-MAX_LENGTH=8092
+MAX_LENGTH=4096
+# MAX_LENGTH=8092
 MAX_MODEL_LENGTH=$((MAX_PROMPT_LENGTH + MAX_LENGTH + 1024))
 
 TOTAL_BATCH_SIZE=$((BS * ACCUMULATION_STEPS * NUM_GPUS))
@@ -63,16 +62,20 @@ NUM_GENERATIONS=16
 NUM_GENERATIONS=$(python scripts/utils/get_num_generations.py --num_gpus "$NUM_GPUS" --bs "$BS" --max_generations "$NUM_GENERATIONS")
 echo "NUM_GENERATIONS: ${NUM_GENERATIONS}"
 
-RL_MODEL_NAME="bs${TOTAL_BATCH_SIZE}_ml${MAX_LENGTH}_gen${NUM_GENERATIONS}_${JOB_ID}_RL"
-echo "RL_MODEL_NAME: ${RL_MODEL_NAME}"
 
 # MODEL_BASE='Qwen3-4B-Thinking-2507'
-MODEL_BASE='Qwen3-1_7B'
-MODEL_BASE_PATH="Qwen/Qwen3-1.7B"
-# MODEL_BASE='Qwen3-4B'
-# MODEL_BASE_PATH="Qwen/Qwen3-4B"
+# MODEL_BASE='Qwen3-1_7B'
+# MODEL_BASE_PATH="Qwen/Qwen3-1.7B"
+MODEL_BASE='Qwen3-4B'
+MODEL_BASE_PATH="Qwen/Qwen3-4B"
 
 ENABLE_THINKING_MODE='False'
+SCALE_REWARDS='batch'
+SAMPLING_LEVEL='token'
+
+RL_MODEL_NAME="TM${ENABLE_THINKING_MODE}_ml${MAX_LENGTH}_SR${SCALE_REWARDS}_IS${SAMPLING_LEVEL}_${JOB_ID}_RL"
+echo "RL_MODEL_NAME: ${RL_MODEL_NAME}"
+
 
 OUTPUT_DIR="${BASE_WORK}/model_trained/${LOSS_TYPE}/${MODEL_BASE}/${RL_MODEL_NAME}"
 mkdir -p "${OUTPUT_DIR}"
@@ -111,7 +114,8 @@ LAUNCHER=(
         --model_name_or_path "${MODEL_BASE_PATH}"
         --output_dir "${OUTPUT_DIR}"
         --enable_thinking_mode "${ENABLE_THINKING_MODE}"
-        --scale_rewards 'none'
+        --scale_rewards "${SCALE_REWARDS}"
+        --importance_sampling_level "${SAMPLING_LEVEL}"
         --mask_truncated_completions 'True'
 
         --logging_dir "${LOGGING_DIR_TENSORBOARD}"

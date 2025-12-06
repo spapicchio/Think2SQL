@@ -66,7 +66,9 @@ log_level: info
 logging_first_step: true
 logging_steps: 1
 logging_strategy: steps
-lr_scheduler_type: constant_with_warmup
+lr_scheduler_type: cosine_with_min_lr
+lr_scheduler_kwargs:
+  min_lr_rate: 1e-7
 max_grad_norm: 0.2
 max_steps: -1
 overwrite_output_dir: false
@@ -90,7 +92,7 @@ temperature: 0.6        # vendor default
 top_p: 0.95              # vendor default (add this; it’s in the model config)
 top_k: 20               # vendor default
 repetition_penalty: 1.1 # vendor default
-optim: adamw_8bit
+# optim: adamw_8bit
 wandb_entity: spapicchio-politecnico-di-torino
-wandb_project: think2sql
+wandb_project: think2sql-qwen3
 warmup_ratio: 0.1
