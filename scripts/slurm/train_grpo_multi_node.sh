@@ -6,7 +6,7 @@
 #SBATCH --output=./logs/rl/%j.out
 #SBATCH --nodes=2
 #SBATCH --qos=qos_gpu_h100-t3
-#SBATCH --time=20:00:00
+#SBATCH --time=15:00:00
 #SBATCH --cpus-per-task=100
 #SBATCH --signal=B:USR1@30
 #SBATCH --open-mode=append
@@ -67,8 +67,8 @@ DB_PATH="${BASE_WORK_DATA}/bird/train/train_databases"
 
 # ----------- Training Params -----------
 LOSS_TYPE='dapo'
-REWARD_FUNCS="qatch_small_update_with_fm"
-REWARD_WEIGHTS="1.0"
+REWARD_FUNCS="EX format"
+REWARD_WEIGHTS="0.95 0.05"
 LEARNING_RATE=1e-6
 NUM_EPOCHS=1
 BS=8
@@ -83,13 +83,15 @@ NUM_GENERATIONS=$(python scripts/utils/get_num_generations.py --num_gpus "$WORLD
 log_section "NUM_GENERATIONS: ${NUM_GENERATIONS}" "${JOB_ID}"
 
 ENABLE_THINKING_MODE='False'
+SCALE_REWARDS='batch'
+SAMPLING_LEVEL='token'
 
-RL_MODEL_NAME="bs${TOTAL_BATCH_SIZE}_ml${MAX_LENGTH}_gen${NUM_GENERATIONS}_${JOB_ID}_RL"
-log_section "RL_MODEL_NAME: ${RL_MODEL_NAME}" "${JOB_ID}"
-
-MODEL_BASE='Qwen3-8B'
-MODEL_BASE_PATH="Qwen/Qwen3-8B"
+MODEL_BASE='Qwen3-4B'
+MODEL_BASE_PATH="Qwen/Qwen3-4B"
 MODEL_BASE_PATH=$(python scripts/utils/get_model_path_hf_cache.py --model_id "$MODEL_BASE_PATH")
+
+RL_MODEL_NAME="TM${ENABLE_THINKING_MODE}_ml${MAX_LENGTH}_SR${SCALE_REWARDS}_IS${SAMPLING_LEVEL}_${JOB_ID}_RL"
+log_section "RL_MODEL_NAME: ${RL_MODEL_NAME}" "${JOB_ID}"
 
 OUTPUT_DIR="${BASE_WORK_MODEL}/${LOSS_TYPE}/${MODEL_BASE}/${RL_MODEL_NAME}"
 mkdir -p "${OUTPUT_DIR}"
@@ -129,7 +131,8 @@ TRAINING_PARAMS=(
         --model_name_or_path "${MODEL_BASE_PATH}"
         --output_dir "${OUTPUT_DIR}"
         --enable_thinking_mode "${ENABLE_THINKING_MODE}"
-        --scale_rewards 'none'
+        --importance_sampling_level "${SAMPLING_LEVEL}"
+        --scale_rewards "${SCALE_REWARDS}"
         --mask_truncated_completions 'True'
 
         --run_name "${SLURM_JOB_NAME}"
