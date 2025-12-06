@@ -79,7 +79,7 @@ MAX_MODEL_LENGTH=$((MAX_PROMPT_LENGTH + MAX_LENGTH + 1024))
 
 TOTAL_BATCH_SIZE=$((BS * ACCUMULATION_STEPS * WORLD_SIZE))
 NUM_GENERATIONS=16
-NUM_GENERATIONS=$(python scripts/utils/get_num_generations.py --num_gpus "$WORLD_SIZE" --bs "$BS" --max_generations "$NUM_GENERATIONS")
+NUM_GENERATIONS=$(python ${BASE_WORK}/scripts/utils/get_num_generations.py --num_gpus "$WORLD_SIZE" --bs "$BS" --max_generations "$NUM_GENERATIONS")
 log_section "NUM_GENERATIONS: ${NUM_GENERATIONS}" "${JOB_ID}"
 
 ENABLE_THINKING_MODE='False'
