@@ -88,7 +88,7 @@ SAMPLING_LEVEL='token'
 
 MODEL_BASE='Qwen3-4B'
 MODEL_BASE_PATH="Qwen/Qwen3-4B"
-MODEL_BASE_PATH=$(python scripts/utils/get_model_path_hf_cache.py --model_id "$MODEL_BASE_PATH")
+MODEL_BASE_PATH=$(python ${BASE_WORK}/scripts/utils/get_model_path_hf_cache.py --model_id "$MODEL_BASE_PATH")
 
 RL_MODEL_NAME="TM${ENABLE_THINKING_MODE}_ml${MAX_LENGTH}_SR${SCALE_REWARDS}_IS${SAMPLING_LEVEL}_${JOB_ID}_RL"
 log_section "RL_MODEL_NAME: ${RL_MODEL_NAME}" "${JOB_ID}"
