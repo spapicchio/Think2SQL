@@ -61,14 +61,17 @@ vllm_server_port: 24879
 gradient_checkpointing: true
 gradient_checkpointing_kwargs:
   use_reentrant: false
-log_completions: false
+
 log_level: info
 logging_first_step: true
 logging_steps: 1
 logging_strategy: steps
-lr_scheduler_type: cosine_with_min_lr
-lr_scheduler_kwargs:
-  min_lr_rate: 0.1
+wandb_log_unique_prompts: true
+log_completions: true
+num_completions_to_print: 1
+
+lr_scheduler_type: constant_with_warmup
+
 max_grad_norm: 0.2
 max_steps: -1
 overwrite_output_dir: false
@@ -85,7 +88,7 @@ save_strategy: "steps"
 save_steps: 50
 save_total_limit: 2
 seed: 42
-wandb_log_unique_prompts: true
+
 
 # https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct/blob/main/generation_config.json
 temperature: 0.6        # vendor default

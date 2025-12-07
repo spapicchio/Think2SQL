@@ -120,8 +120,6 @@ LAUNCHER=(
 
         --logging_dir "${LOGGING_DIR_TENSORBOARD}"
         --run_name "${JOB_NAME}"
-        --log_completions True
-        --num_completions_to_print 0
         --vllm_server_host "${VLLM_SERVER_HOST}"
         --vllm_server_port "${VLLM_SERVER_PORT}"
         --save_steps 50
