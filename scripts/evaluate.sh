@@ -19,6 +19,8 @@ set -Eeuo pipefail
 if [[ -n "${SLURM_JOB_ID:-}" ]]; then
   echo "Running inside SLURM job ${SLURM_JOB_ID}"
   export BASE_WORK="${SCRATCH}/Think2SQL"
+  export BASE_WORK_DATA="${SCRATCH}/data"
+  export BASE_WORK_MODEL="${SCRATCH}/model_trained"
   cd $BASE_WORK
   export HF_HOME="${SCRATCH}/hf_cache"
   source "${BASE_WORK}/scripts/utils/slurm_job_requeue.sh"
@@ -34,11 +36,11 @@ if [[ -n "${SLURM_JOB_ID:-}" ]]; then
   setup_idris
   # label, dataset, db_path
   datasets=(
-    "SPIDER-test"       "data/processed/test_spider_processed_with_plan_cols_time.json"                "data/spider/test_database"
-    "Bird-dev"          "data/processed/dev_bird_processed_with_plan_cols_time.json"                   "data/bird/dev_20240627/dev_databases"
-    "SPIDER-DK"         "data/processed/dev_spider_dk_processed_with_plan_cols_time.json"              "data/Spider-DK/database"
-    "SPIDER-SYN"        "data/processed/dev_spider_syn_processed_with_plan_cols_time.json"             "data/spider/database"
-    "SPIDER-REALISTIC"  "data/processed/dev_spider_realistic_processed_with_plan_cols_time.json"       "data/spider/database"
+    "SPIDER-test"       "${BASE_WORK_DATA}/processed/test_spider_processed_with_plan_cols_time.json"                "${BASE_WORK_DATA}/spider/test_database"
+    "Bird-dev"          "${BASE_WORK_DATA}/processed/dev_bird_processed_with_plan_cols_time.json"                   "${BASE_WORK_DATA}/bird/dev_20240627/dev_databases"
+    "SPIDER-DK"         "${BASE_WORK_DATA}/processed/dev_spider_dk_processed_with_plan_cols_time.json"              "${BASE_WORK_DATA}/Spider-DK/database"
+    "SPIDER-SYN"        "${BASE_WORK_DATA}/processed/dev_spider_syn_processed_with_plan_cols_time.json"             "${BASE_WORK_DATA}/spider/test_database"
+    "SPIDER-REALISTIC"  "${BASE_WORK_DATA}/processed/dev_spider_realistic_processed_with_plan_cols_time.json"       "${BASE_WORK_DATA}/spider/test_database"
     # "sciencebenchmark"  "data/processed/dev_sciencebenchmark_processed_with_plan_cols_time.json"       "data/sciencebenchmark/databases"
     # "EHRSQL"            "data/processed/dev_ehrsql_processed_with_plan_cols_time.json"                 "data/EHRSQL/database"
   )
@@ -51,8 +53,8 @@ else
     # "SPIDER-test"       "data/omnisql/data/processed/test_spider_processed_with_plan_cols_time.json"                "data/omnisql/data/spider/test_database"
     # "Bird-dev"          "data/omnisql/data/processed/dev_bird_processed_with_plan_cols_time.json"                   "data/omnisql/data/bird/dev_20240627/dev_databases"
     "SPIDER-DK"         "data/omnisql/data/processed/dev_spider_dk_processed_with_plan_cols_time.json"              "data/omnisql/data/Spider-DK/database"
-    "SPIDER-SYN"        "data/omnisql/data/processed/dev_spider_syn_processed_with_plan_cols_time.json"             "data/omnisql/data/spider/database"
-    "SPIDER-REALISTIC"  "data/omnisql/data/processed/dev_spider_realistic_processed_with_plan_cols_time.json"       "data/omnisql/data/spider/database"
+    "SPIDER-SYN"        "data/omnisql/data/processed/dev_spider_syn_processed_with_plan_cols_time.json"             "data/omnisql/data/spider/test_database"
+    "SPIDER-REALISTIC"  "data/omnisql/data/processed/dev_spider_realistic_processed_with_plan_cols_time.json"       "data/omnisql/data/spider/test_database"
     # "sciencebenchmark"  "data/omnisql/data/processed/dev_sciencebenchmark_processed_with_plan_cols_time.json"       "data/omnisql/data/sciencebenchmark/databases"
     # "EHRSQL"            "data/omnisql/data/processed/dev_ehrsql_processed_with_plan_cols_time.json"                 "data/omnisql/data/EHRSQL/database"
   )
@@ -148,8 +150,8 @@ run_suite() {
     TOKENIZERS_PARALLELISM=true \
     VLLM_WORKER_MULTIPROC_METHOD=spawn \
     python "${launcher[@]}" \
-      --dataset_name "${BASE_WORK}/${dataset}" \
-      --relative_db_base_path "${BASE_WORK}/${db_path}" \
+      --dataset_name "${dataset}" \
+      --relative_db_base_path "${db_path}" \
       --save_folder_path "${save_folder_path}"
 
     echo "=== Done ${label} saved in ${save_folder_path} ==="

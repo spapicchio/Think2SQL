@@ -82,6 +82,16 @@ def get_reward_funcs(
         include_format_reward=True,
     )
     qatch_small_update_with_fm.__name__ = "qatch_small_update_with_fm"
+    
+    qatch_small_update_fm_with_buckets = partial(
+        reward_small_update,
+        relative_db_base_path=script_args.relative_db_base_path,
+        evaluator=QATCHEvaluator(),
+        metric="cp_cr_tc",
+        include_format_reward=True,
+        is_discrete_buckets=True,
+    )
+    qatch_small_update_fm_with_buckets.__name__ = "qatch_small_update_fm_with_buckets"
 
     ex_small_update_with_fm = partial(
         reward_small_update,
@@ -123,6 +133,7 @@ def get_reward_funcs(
         "qatch_complex": qatch_complex_reward,
         "ex_complex": ex_complex_reward,
         "qatch_small_update_with_fm": qatch_small_update_with_fm,
+        "qatch_small_update_fm_with_buckets": qatch_small_update_fm_with_buckets,
         "ex_small_update_with_fm": ex_small_update_with_fm,
         "penalty_not_english": penalty_not_english,
         "penalty_repetitions": penalty_repetitions,

@@ -144,6 +144,7 @@ def reward_small_update(completions: list[list[dict]],
                         evaluator: EvaluatorProtocol,
                         relative_db_base_path: str,
                         include_format_reward: bool = False,
+                        is_discrete_buckets: bool = False,
                         **kwargs,
                         ) -> list[float]:
     """
@@ -165,7 +166,9 @@ def reward_small_update(completions: list[list[dict]],
         relative_db_base_path=relative_db_base_path,
     )
     scores = []
-    for completion, exec_pred, exec_target in zip(model_predictions, model_predictions_results, target_sql_results):
+    matches = [1] * len(completions) if not include_format_reward else format_reward(completions, **kwargs)
+    for completion, exec_pred, exec_target, match in zip(model_predictions, model_predictions_results,
+                                                         target_sql_results, matches):
         if isinstance(exec_pred[0], ExecutorError) or isinstance(exec_target[0], ExecutorError):
             # The prediction contains an error
             scores.append(0)
@@ -173,22 +176,27 @@ def reward_small_update(completions: list[list[dict]],
         task = EvaluateTask(predictions=exec_pred, target=exec_target)
         score = evaluator.execute_metric(tasks=[task], **kwargs)[0]
         # if the score is greater than 0.1, keep it, otherwise give a small reward of 0.1 for having a valid execution
-        scores.append(score if score > 0.1 else 0.1)
+        if score == 1:
+            scores.append(score)
+        elif match:
+            if is_discrete_buckets:
+                # Discrete buckets: 0.1, 0.3, 0.5, 0.7, 0.9
+                if 0.0 <= score < 0.1:
+                    scores.append(0.1)
+                if 0.1 <= score < 0.5:
+                    scores.append(0.5)
+                if 0.5 <= score < 0.8:
+                    scores.append(0.8)
+                if 0.8 <= score < 1.0:
+                    scores.append(0.9)
+            else:
+                scores.append(score if score > 0.1 else 0.1)
+        else:
+            scores.append(0.0)
 
     logger.info(
         f"Completed in {time.perf_counter() - start_time:.2f} seconds"
     )
-    if include_format_reward:
-        trainer_state: TrainerState = kwargs.get('trainer_state')
-        max_steps = trainer_state.max_steps
-        global_step = trainer_state.global_step
-        if trainer_state.global_step <= int(trainer_state.max_steps * 0.5):
-            logger.info(f"[{hash_id}] Applying format rewards at step {global_step}/{max_steps}")
-            # Apply the format rewards only for ~half of the training steps
-            format_rewards = format_reward(completions)
-            scores = [0.95 * score + 0.05 * fr for score, fr in zip(scores, format_rewards)]
-        else:
-            logger.info(f"Skipping format rewards at step {global_step}/{max_steps}")
     return scores
 
 
