@@ -1,9 +1,12 @@
 import statistics
 from dataclasses import dataclass, asdict
 from pathlib import Path
+from typing import Literal
 
+import pandas as pd
 from NL2SQLEvaluator.db_executor_nodes.db_executor_protocol import extract_sql_or_same
-from NL2SQLEvaluator.evaluator_nodes import BirdEXEvaluator
+from NL2SQLEvaluator.evaluator_nodes import BirdEXEvaluator, EXEvaluator
+from NL2SQLEvaluator.evaluator_nodes.qatch_metrics import QATCHEvaluator
 from trl import TrlParser
 from vllm import SamplingParams
 
@@ -24,7 +27,12 @@ class SummaryResults:
     number_of_completions: int
     model_name: str
     dataset_name: str
-    ex: float
+    score_name: Literal[
+        'cell_precision', 'cell_recall', 'tuple_cardinality', 'tuple_constraint', 'tuple_order',
+        'bird_ex',
+        'ex'
+    ]
+    score: float
     std: float
 
 
@@ -58,7 +66,6 @@ def main_eval(
         },
         num_proc=16,
     )
-
     # store some examples to check the data processing
     for i in range(3):
         logger.info("***** Example *****")
@@ -105,50 +112,91 @@ def main_eval(
     else:
         predictions = [[{'content': p} for p in pred] for pred in predictions_str]
 
-    results = nl2sql_reward(
-        completions=predictions,
-        target_sql=target_queries,
-        db_id=db_ids,
-        evaluator=BirdEXEvaluator(),
-        relative_db_base_path=evaluate_args.relative_db_base_path,
-        sql_execution_time=[500] * len(predictions)
+    df_base = dataset.to_pandas()
+    summary_results = []
+    for evaluator_name in [
+        'cell_precision', 'cell_recall', 'tuple_cardinality', 'tuple_constraint', 'tuple_order', 'bird_ex', 'ex'
+    ]:
+        result_df, summary_result = _evaluate_predictions_targets(
+            preds=predictions,
+            targs=target_queries,
+            db_ids=db_ids,
+            evaluator_name=evaluator_name,
+            relative_db_base_path=evaluate_args.relative_db_base_path,
+            dataset_name=dataset_name,
+            number_of_completions=generation_params.number_of_completions,
+            num_experiments=num_experiments,
+            dataset_len=len(dataset),
+            predictions_str=predictions_str,
+            model_name=model_name,
+        )
+        df_base = pd.concat([df_base, result_df])
+        # logger.info(df_base.columns)
+        summary_results.append(summary_result)
+
+    saver.save(
+        folder=Path(evaluate_args.save_folder_path) / strategy,
+        df=df_base,
+        configs=[vllm_config, generation_params, sampling_params, evaluate_args] + summary_results,
     )
 
-    df = dataset.to_pandas()
 
-    ex_n = []
+def _evaluate_predictions_targets(preds, targs, db_ids,
+                                  evaluator_name, relative_db_base_path, dataset_name,
+                                  number_of_completions, num_experiments, dataset_len,
+                                  predictions_str, model_name):
+    evaluators = {
+        'cell_precision': QATCHEvaluator(),
+        'cell_recall': QATCHEvaluator(),
+        'tuple_cardinality': QATCHEvaluator(),
+        'tuple_constraint': QATCHEvaluator(),
+        'tuple_order': QATCHEvaluator(),
+        'bird_ex': BirdEXEvaluator(),
+        'ex': EXEvaluator()
+    }
+    evaluator = evaluators[evaluator_name]
+
+    results = nl2sql_reward(
+        completions=preds,
+        target_sql=targs,
+        db_id=db_ids,
+        evaluator=evaluator,
+        relative_db_base_path=relative_db_base_path,
+        sql_execution_time=[500] * len(preds),
+        metric=evaluator_name,
+    )
+
+    score_n = []
+    df = pd.DataFrame()
     for i in range(num_experiments):
-        start = i * len(dataset)
-        end = start + len(dataset)
+        start = i * dataset_len
+        end = start + dataset_len
         n_pred = predictions_str[start:end]
         n_results = results[start:end]
-        df[f'{model_name}_{i}'] = n_pred
 
         sql_prediction = [
             extract_sql_or_same(pred) if generation_params.number_of_completions == 1
             else [extract_sql_or_same(p) for p in pred]
             for pred in n_pred
         ]
-        ex_n.append(statistics.mean(n_results))
+        score_n.append(statistics.mean(n_results))
 
         df[f'SQL_{model_name}_{i}'] = sql_prediction
-        df[f'EX_{model_name}_{i}'] = n_results
+        df[f'{evaluator_name}_{model_name}_{i}'] = n_results
 
-    mean_ex = statistics.mean(ex_n) * 100
-    std_ex = (statistics.stdev(ex_n) * 100) if len(ex_n) > 1 else 0.0
-    summary_results = SummaryResults(
-        number_of_completions=generation_params.number_of_completions,
+    mean_ex = statistics.mean(score_n) * 100
+    std_ex = (statistics.stdev(score_n) * 100) if len(score_n) > 1 else 0.0
+    summary = SummaryResults(
+        number_of_completions=number_of_completions,
         model_name=model_name,
         dataset_name=dataset_name,
-        ex=round(mean_ex, 3),
+        score_name=evaluator_name,
+        score=round(mean_ex, 3),
         std=round(std_ex, 3),
     )
-    logger.warning(summary_results)
-    saver.save(
-        folder=Path(evaluate_args.save_folder_path) / strategy,
-        df=df,
-        configs=(vllm_config, generation_params, sampling_params, evaluate_args, summary_results),
-    )
+    logger.warning(summary)
+    summary.__name__ = f"SummaryResults_{evaluator_name}"
+    return df, summary
 
 
 if __name__ == "__main__":

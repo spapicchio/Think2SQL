@@ -3,7 +3,6 @@ from statistics import mean, stdev
 
 from NL2SQLEvaluator.db_executor_nodes.db_executor_protocol import extract_sql_or_same, ExecutorError
 from NL2SQLEvaluator.evaluator_nodes.evaluator_protocol import EvaluatorProtocol, EvaluateTask
-from transformers import TrainerState
 
 from think2sql.grpo.rewards.rewards_reasoning_content import format_reward
 from think2sql.grpo.rewards.utils import (utils_parse_model_response,
@@ -329,7 +328,7 @@ def nl2sql_reward(
     start_time = time.perf_counter()
     hash_id = hash(start_time)
     logger = get_logger(f"REWARD_SQLS-{hash_id}")
-    
+
     model_predictions = [utils_parse_model_response(val) for val in completions]
     target_sql_results, model_predictions_results = utils_execute_target_and_pred_sql(
         db_ids=db_id,
