@@ -118,10 +118,17 @@ def get_reward_funcs(
     )
     ex_complex_reward.__name__ = "ex_complex_reward"
 
+    format_reward_think = partial(
+        format_reward,
+        reasoning_tag="think",
+    )
+    format_reward_think.__name__ = "format_reward_think"
+
     REWARD_FUNCS_REGISTRY = {
         "EX": execution_accuracy_fn,
         "QATCH": qatch_reward_fn,
         "format": format_reward,
+        "format_think": format_reward_think,
         "tag_count": tag_count_reward,
         "multi_tag_format": multi_tag_format_reward,
         "table_recall": reward_selected_tables,

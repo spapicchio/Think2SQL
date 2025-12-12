@@ -6,7 +6,7 @@
 #SBATCH --output=./logs/rl/%j.out
 #SBATCH --nodes=2
 #SBATCH --qos=qos_gpu_h100-t3
-#SBATCH --time=15:00:00
+#SBATCH --time=20:00:00
 #SBATCH --cpus-per-task=100
 #SBATCH --signal=B:USR1@30
 #SBATCH --open-mode=append
@@ -58,7 +58,8 @@ LOGGING_DIR_TENSORBOARD="${BASE_WORK}/.tensorboard_logging/${JOB_ID}/"
 # ----------- Custom  Params -----------
 PROMPT_FOLDER="${BASE_WORK}/prompts"
 USER_PROMPT_NAME="base_think_user_prompt.jinja"
-SYSTEM_PROMPT_NAME="base_think_system_prompt.jinja"
+# SYSTEM_PROMPT_NAME="base_think_system_prompt.jinja"
+SYSTEM_PROMPT_NAME="base_think_system_prompt_qwen.jinja"
 
 # ----------- Dataset Params -----------
 DATASET_NAME="${BASE_WORK_DATA}/train_bird_processed_with_plan_cols_time.json"
@@ -67,7 +68,7 @@ DB_PATH="${BASE_WORK_DATA}/bird/train/train_databases"
 
 # ----------- Training Params -----------
 LOSS_TYPE='dapo'
-REWARD_FUNCS="EX format"
+REWARD_FUNCS="QATCH format_think"
 REWARD_WEIGHTS="0.95 0.05"
 LEARNING_RATE=1e-6
 NUM_EPOCHS=1
