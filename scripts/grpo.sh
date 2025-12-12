@@ -2,7 +2,7 @@
 DEVICE_TRL='0,1,2,3'
 NUM_GPUS=4
 
-DEVICE_VLLM='4,6'
+DEVICE_VLLM='4,5'
 NUM_GPU_RESERVED_VLLM=2
 
 echo "NUM_GPUS: ${NUM_GPUS}"
@@ -33,12 +33,9 @@ LOGGING_DIR_TENSORBOARD="${BASE_WORK}/.tensorboard_logging/${JOB_ID}/"
 
 # ----------- Custom  Params -----------
 PROMPT_FOLDER="${BASE_WORK}/prompts"
-# SYSTEM_PROMPT_NAME="base_think_system_multi_tag_prompt.jinja"
-# USER_PROMPT_NAME="mult_tag_user_prompt.jinja"
-SYSTEM_PROMPT_NAME="base_think_system_prompt.jinja"
+SYSTEM_PROMPT_NAME="base_think_system_prompt_qwen.jinja"
+# SYSTEM_PROMPT_NAME="base_think_system_prompt.jinja"
 USER_PROMPT_NAME="base_think_user_prompt.jinja"
-# SYSTEM_PROMPT_NAME="no_tag_system_prompt.jinja"
-# USER_PROMPT_NAME="no_tag_user_prompt.jinja"
 
 # ----------- Dataset Params -----------
 DATASET_NAME="${BASE_WORK}/data/omnisql/data/processed/train_bird_processed_with_plan_cols_time.json"
@@ -46,7 +43,7 @@ DB_PATH="${BASE_WORK}/data/omnisql/data/bird/train/train_databases"
 
 # ----------- Training Params -----------
 LOSS_TYPE='dapo'
-REWARD_FUNCS="QATCH format"
+REWARD_FUNCS="QATCH format_think"
 REWARD_WEIGHTS="0.95 0.05"
 LEARNING_RATE=1e-6
 NUM_EPOCHS=1
@@ -69,7 +66,7 @@ echo "NUM_GENERATIONS: ${NUM_GENERATIONS}"
 MODEL_BASE='Qwen3-4B'
 MODEL_BASE_PATH="Qwen/Qwen3-4B"
 
-ENABLE_THINKING_MODE='False'
+ENABLE_THINKING_MODE='True'
 SCALE_REWARDS='batch'
 SAMPLING_LEVEL='token'
 
@@ -117,6 +114,7 @@ LAUNCHER=(
         --scale_rewards "${SCALE_REWARDS}"
         --importance_sampling_level "${SAMPLING_LEVEL}"
         --mask_truncated_completions 'True'
+        --top_entropy_quantile 0.2
 
         --logging_dir "${LOGGING_DIR_TENSORBOARD}"
         --run_name "${JOB_NAME}"

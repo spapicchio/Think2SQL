@@ -58,8 +58,8 @@ LOGGING_DIR_TENSORBOARD="${BASE_WORK}/.tensorboard_logging/${JOB_ID}/"
 # ----------- Custom  Params -----------
 PROMPT_FOLDER="${BASE_WORK}/prompts"
 USER_PROMPT_NAME="base_think_user_prompt.jinja"
-# SYSTEM_PROMPT_NAME="base_think_system_prompt.jinja"
-SYSTEM_PROMPT_NAME="base_think_system_prompt_qwen.jinja"
+SYSTEM_PROMPT_NAME="base_think_system_prompt.jinja"
+# SYSTEM_PROMPT_NAME="base_think_system_prompt_qwen.jinja"
 
 # ----------- Dataset Params -----------
 DATASET_NAME="${BASE_WORK_DATA}/train_bird_processed_with_plan_cols_time.json"

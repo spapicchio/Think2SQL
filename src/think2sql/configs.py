@@ -343,7 +343,11 @@ class EvaluateArgs(SFTScriptArguments):
         default="results",
         metadata={"help": "The folder where to save the evaluation results."},
     )
-
+    run_only_predictions: bool = field(
+        default=False,
+        metadata={"help": "Whether to only run the prediction without evaluation."},
+    )
+    
     def __post_init__(self):
         super().__post_init__()
         if self.system_prompt_name is not None and self.system_prompt_name.lower() in (

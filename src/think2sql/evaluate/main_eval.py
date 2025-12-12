@@ -54,7 +54,7 @@ def main_eval(
     dataset = dataset.filter(lambda x: x['sql_execution_time'] != -1)
     logger.info(f"Filtered {initial_len - len(dataset)} samples that have sql_execution_time != -1 (Wrong target SQL)")
 
-    # dataset = dataset.select(range(10))
+    dataset = dataset.select(range(10))
 
     dataset = dataset.map(
         build_messages,
@@ -113,26 +113,41 @@ def main_eval(
         predictions = [[{'content': p} for p in pred] for pred in predictions_str]
 
     df_base = dataset.to_pandas()
+
     summary_results = []
-    for evaluator_name in [
-        'cell_precision', 'cell_recall', 'tuple_cardinality', 'tuple_constraint', 'tuple_order', 'bird_ex', 'ex'
-    ]:
-        result_df, summary_result = _evaluate_predictions_targets(
-            preds=predictions,
-            targs=target_queries,
-            db_ids=db_ids,
-            evaluator_name=evaluator_name,
-            relative_db_base_path=evaluate_args.relative_db_base_path,
-            dataset_name=dataset_name,
-            number_of_completions=generation_params.number_of_completions,
-            num_experiments=num_experiments,
-            dataset_len=len(dataset),
-            predictions_str=predictions_str,
-            model_name=model_name,
-        )
-        df_base = pd.concat([df_base, result_df])
-        # logger.info(df_base.columns)
-        summary_results.append(summary_result)
+
+    for i in range(num_experiments):
+        start = i * len(dataset)
+        end = start + len(dataset)
+        n_pred = predictions_str[start:end]
+
+        sql_prediction = [
+            extract_sql_or_same(pred) if generation_params.number_of_completions == 1
+            else [extract_sql_or_same(p) for p in pred]
+            for pred in n_pred
+        ]
+        df_base[f'Pred_{model_name}_{i}'] = n_pred
+        df_base[f'SQL_{model_name}_{i}'] = sql_prediction
+
+    if not evaluate_args.run_only_predictions:
+        for evaluator_name in [
+            'cell_precision', 'cell_recall', 'tuple_cardinality', 'tuple_constraint', 'tuple_order', 'bird_ex', 'ex'
+        ]:
+            result_df, summary_result = _evaluate_predictions_targets(
+                preds=predictions,
+                targs=target_queries,
+                db_ids=db_ids,
+                evaluator_name=evaluator_name,
+                relative_db_base_path=evaluate_args.relative_db_base_path,
+                dataset_name=dataset_name,
+                number_of_completions=generation_params.number_of_completions,
+                num_experiments=num_experiments,
+                dataset_len=len(dataset),
+                model_name=model_name,
+            )
+            df_base = pd.concat([df_base, result_df], axis=1)
+            logger.info(df_base.info())
+            summary_results.append(summary_result)
 
     saver.save(
         folder=Path(evaluate_args.save_folder_path) / strategy,
@@ -143,8 +158,7 @@ def main_eval(
 
 def _evaluate_predictions_targets(preds, targs, db_ids,
                                   evaluator_name, relative_db_base_path, dataset_name,
-                                  number_of_completions, num_experiments, dataset_len,
-                                  predictions_str, model_name):
+                                  number_of_completions, num_experiments, dataset_len, model_name):
     evaluators = {
         'cell_precision': QATCHEvaluator(),
         'cell_recall': QATCHEvaluator(),
@@ -171,17 +185,9 @@ def _evaluate_predictions_targets(preds, targs, db_ids,
     for i in range(num_experiments):
         start = i * dataset_len
         end = start + dataset_len
-        n_pred = predictions_str[start:end]
         n_results = results[start:end]
 
-        sql_prediction = [
-            extract_sql_or_same(pred) if generation_params.number_of_completions == 1
-            else [extract_sql_or_same(p) for p in pred]
-            for pred in n_pred
-        ]
         score_n.append(statistics.mean(n_results))
-
-        df[f'SQL_{model_name}_{i}'] = sql_prediction
         df[f'{evaluator_name}_{model_name}_{i}'] = n_results
 
     mean_ex = statistics.mean(score_n) * 100

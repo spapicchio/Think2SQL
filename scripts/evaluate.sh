@@ -50,8 +50,8 @@ else
   export CUDA_VISIBLE_DEVICES
     # label, dataset, db_path
   datasets=(
-    # "SPIDER-test"       "data/omnisql/data/processed/test_spider_processed_with_plan_cols_time.json"                "data/omnisql/data/spider/test_database"
-    # "Bird-dev"          "data/omnisql/data/processed/dev_bird_processed_with_plan_cols_time.json"                   "data/omnisql/data/bird/dev_20240627/dev_databases"
+    "SPIDER-test"       "data/omnisql/data/processed/test_spider_processed_with_plan_cols_time.json"                "data/omnisql/data/spider/test_database"
+    "Bird-dev"          "data/omnisql/data/processed/dev_bird_processed_with_plan_cols_time.json"                   "data/omnisql/data/bird/dev_20240627/dev_databases"
     "SPIDER-DK"         "data/omnisql/data/processed/dev_spider_dk_processed_with_plan_cols_time.json"              "data/omnisql/data/Spider-DK/database"
     "SPIDER-SYN"        "data/omnisql/data/processed/dev_spider_syn_processed_with_plan_cols_time.json"             "data/omnisql/data/spider/test_database"
     "SPIDER-REALISTIC"  "data/omnisql/data/processed/dev_spider_realistic_processed_with_plan_cols_time.json"       "data/omnisql/data/spider/test_database"
@@ -63,6 +63,9 @@ fi
 
 NUM_GPUS=$(python -c "import torch; print(torch.cuda.device_count())")
 echo  "Using ${NUM_GPUS} GPUs."
+
+RUN_ONLY_PREDICTIONS="${RUN_ONLY_PREDICTIONS:-false}"
+echo "RUN_ONLY_PREDICTIONS=${RUN_ONLY_PREDICTIONS}"
 
 DATA_PARALLEL_SIZE=$NUM_GPUS
 TENSOR_PARALLEL_SIZE=1
@@ -136,6 +139,7 @@ run_suite() {
     --user_prompt_name "${USER_PROMPT_NAME}"
     --system_prompt_name "${SYSTEM_PROMPT_NAME}"
     --enable_thinking_mode_in_eval "${ENABLE_THINKING_MODE}"
+    --run_only_predictions "${RUN_ONLY_PREDICTIONS}"
   )
 
   for ((i=0; i<${#datasets[@]}; i+=3)); do

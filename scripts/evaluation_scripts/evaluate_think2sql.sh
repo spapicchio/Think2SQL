@@ -35,9 +35,10 @@ source "${BASE_WORK}/scripts/utils/utils.sh"
 # MODEL_NAME="${BASE_WORK}/model_trained/grpo/Qwen3-1_7B/dapo/bs256_ml8092_gen16_qwen-think4-18facd9a_RL"
 # MODEL_NAME="${BASE_WORK}/model_trained/grpo/Qwen3-1_7B/dapo/bs256_ml8092_gen16_qwen-think4-c5cdacfe_RL"
 # MODEL_NAME="${BASE_WORK}/model_trained/grpo/Qwen3-1_7B/dapo/bs256_ml8092_gen16_qwen-think4-fe7cde7d_RL"
-# MODEL_NAME="${BASE_WORK}/model_trained/dapo/Qwen3-1_7B/bs256_ml8092_gen16_qwen-think4-210bdc81_RL"
+# MODEL_NAME="${BASE_WORK}/model_trained/dapo/Qwen3-4B/TMFalse_ml4096_SRbatch_IStoken_e49038d5_RL"
+MODEL_NAME="${BASE_WORK}/model_trained/dapo/Qwen3-4B/TMFalse_ml4096_SRbatch_IStoken_644bec77_RL"
 # MODEL_NAME="/lustre/fsn1/projects/rech/vno/uld58cl/model_trained/dapo/Qwen3-4B/TMFalse_ml4096_SRbatch_IStoken_212534_RL"
-MODEL_NAME="/lustre/fsn1/projects/rech/vno/uld58cl/model_trained/dapo/Qwen3-4B/TMFalse_ml4096_SRbatch_IStoken_212534_RL"
+# MODEL_NAME="/lustre/fsn1/projects/rech/vno/uld58cl/model_trained/dapo/Qwen3-4B/TMFalse_ml4096_SRbatch_IStoken_212534_RL"
 # MODEL_NAME="/lustre/fsn1/projects/rech/vno/uld58cl/model_trained/dapo/Qwen3-4B/TMFalse_ml4096_SRbatch_IStoken_212596_RL"
 # MODEL_NAME="/lustre/fsn1/projects/rech/vno/uld58cl/model_trained/dapo/Qwen3-4B/TMFalse_ml4096_SRbatch_IStoken_212527_RL"
 
@@ -49,13 +50,15 @@ USER_PROMPT_NAME='base_think_user_prompt.jinja'
 # USER_PROMPT_NAME="no_tag_user_prompt.jinja"
 
 ENABLE_THINKING_MODE=''
+RUN_ONLY_PREDICTIONS=true
 
-# CUDA_VISIBLE_DEVICES='4' \
+CUDA_VISIBLE_DEVICES='6,7' \
 MODEL_NAME=$MODEL_NAME \
 MAX_NEW_TOKENS=$MAX_NEW_TOKENS \
 USER_PROMPT_NAME=$USER_PROMPT_NAME \
 SYSTEM_PROMPT_NAME=$SYSTEM_PROMPT_NAME \
 ENABLE_THINKING_MODE=$ENABLE_THINKING_MODE \
+RUN_ONLY_PREDICTIONS=$RUN_ONLY_PREDICTIONS \
 CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES \
 GREEDY_TEMP="0.6" \
 GREEDY_TOP_P="0.95" \

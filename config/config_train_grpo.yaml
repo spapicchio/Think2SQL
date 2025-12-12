@@ -68,7 +68,7 @@ logging_steps: 1
 logging_strategy: steps
 wandb_log_unique_prompts: true
 log_completions: true
-num_completions_to_print: 1
+num_completions_to_print: 0
 
 lr_scheduler_type: constant_with_warmup
 

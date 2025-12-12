@@ -321,13 +321,16 @@ def nl2sql_reward(
         evaluator: EvaluatorProtocol,
         relative_db_base_path: str,
         sql_execution_time: list[float],
+        log: bool = True,
         *args,
         **kwargs,
 ) -> list[float]:
     # run in parallel predictions and targets
-    start_time = time.perf_counter()
-    hash_id = hash(start_time)
-    logger = get_logger(f"REWARD_SQLS-{hash_id}")
+    logger = None
+    if log:
+        start_time = time.perf_counter()
+        hash_id = hash(start_time)
+        logger = get_logger(f"REWARD_SQLS-{hash_id}")
 
     model_predictions = [utils_parse_model_response(val) for val in completions]
     target_sql_results, model_predictions_results = utils_execute_target_and_pred_sql(
@@ -347,8 +350,8 @@ def nl2sql_reward(
         tasks.append(task)
 
     scores = evaluator.execute_metric(tasks=tasks, *args, **kwargs)
-
-    logger.info(
-        f"Completed in {time.perf_counter() - start_time:.2f} seconds"
-    )
+    if log:
+        logger.info(
+            f"Completed in {time.perf_counter() - start_time:.2f} seconds"
+        )
     return scores
