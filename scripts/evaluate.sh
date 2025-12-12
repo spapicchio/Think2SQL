@@ -146,7 +146,7 @@ run_suite() {
     local label="${datasets[i]}"
     local dataset="${datasets[i+1]}"
     local db_path="${datasets[i+2]}"
-    local save_folder_path="${BASE_WORK}/results/${label}/${USER_PROMPT_NAME%.jinja}/${model_name//\//_}/"
+    local save_folder_path="${BASE_WORK}/results/${label}/${USER_PROMPT_NAME%.jinja}/${model_name##*/}/"    
 
     echo "=== Evaluating on ${label} ==="
 

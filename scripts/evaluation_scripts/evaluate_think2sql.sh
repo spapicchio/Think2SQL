@@ -15,6 +15,10 @@
 set -Eeuo pipefail
 
 # --- env & utils ---
+
+
+export JOB_ID=${SLURM_JOB_ID:-MY_SLURM_JOB_ID}
+
 if [[ -n "${SLURM_JOB_ID:-}" ]]; then
   echo "Running inside SLURM job ${SLURM_JOB_ID}"
   export BASE_WORK="${SCRATCH}/Think2SQL"
@@ -28,7 +32,6 @@ fi
 source "${BASE_WORK}/.env"
 source "${BASE_WORK}/scripts/utils/utils.sh"
 
-
 # MODEL_NAME="${BASE_WORK}/model_trained/grpo/Qwen3-4B-Instruct-2507/dapo/bs256_ml4096_gen8_qwen-think4-b934d9d7_RL"
 # MODEL_NAME="${BASE_WORK}/model_trained/grpo/Qwen3-1_7B/dapo/bs256_ml8092_gen16_qwen-think4-b304a262_RL"
 # MODEL_NAME="${BASE_WORK}/model_trained/grpo/Qwen3-1_7B/dapo/bs256_ml8092_gen16_qwen-think4-cf82256c_RL"
@@ -36,11 +39,18 @@ source "${BASE_WORK}/scripts/utils/utils.sh"
 # MODEL_NAME="${BASE_WORK}/model_trained/grpo/Qwen3-1_7B/dapo/bs256_ml8092_gen16_qwen-think4-c5cdacfe_RL"
 # MODEL_NAME="${BASE_WORK}/model_trained/grpo/Qwen3-1_7B/dapo/bs256_ml8092_gen16_qwen-think4-fe7cde7d_RL"
 # MODEL_NAME="${BASE_WORK}/model_trained/dapo/Qwen3-4B/TMFalse_ml4096_SRbatch_IStoken_e49038d5_RL"
-MODEL_NAME="${BASE_WORK}/model_trained/dapo/Qwen3-4B/TMFalse_ml4096_SRbatch_IStoken_644bec77_RL"
-# MODEL_NAME="/lustre/fsn1/projects/rech/vno/uld58cl/model_trained/dapo/Qwen3-4B/TMFalse_ml4096_SRbatch_IStoken_212534_RL"
-# MODEL_NAME="/lustre/fsn1/projects/rech/vno/uld58cl/model_trained/dapo/Qwen3-4B/TMFalse_ml4096_SRbatch_IStoken_212534_RL"
-# MODEL_NAME="/lustre/fsn1/projects/rech/vno/uld58cl/model_trained/dapo/Qwen3-4B/TMFalse_ml4096_SRbatch_IStoken_212596_RL"
-# MODEL_NAME="/lustre/fsn1/projects/rech/vno/uld58cl/model_trained/dapo/Qwen3-4B/TMFalse_ml4096_SRbatch_IStoken_212527_RL"
+# MODEL_NAME="${BASE_WORK}/model_trained/dapo/Qwen3-4B/TMFalse_ml4096_SRbatch_IStoken_644bec77_RL"
+
+# MODEL_NAME="${SCRATCH}/model_trained/dapo/Qwen3-4B/TMFalse_ml4096_SRbatch_IStoken_212527_RL"
+# MODEL_NAME="${SCRATCH}/model_trained/dapo/Qwen3-4B/TMFalse_ml4096_SRbatch_IStoken_212596_RL"
+# MODEL_NAME="${SCRATCH}/model_trained/dapo/Qwen3-4B/TMFalse_ml4096_SRbatch_IStoken_212534_RL"
+# MODEL_NAME="${SCRATCH}/model_trained/dapo/Qwen3-4B/TMFalse_ml4096_SRbatch_IStoken_236062_RL"
+# MODEL_NAME="${SCRATCH}/model_trained/dapo/Qwen3-4B/TMFalse_ml4096_SRbatch_IStoken_236063_RL"
+# MODEL_NAME="${SCRATCH}/model_trained/dapo/Qwen3-4B/TMFalse_ml4096_SRbatch_IStoken_351542_RL"
+# MODEL_NAME="${SCRATCH}/model_trained/dapo/Qwen3-4B/TMFalse_ml4096_SRbatch_IStoken_351394_RL"
+# MODEL_NAME="${SCRATCH}/model_trained/dapo/Qwen3-4B/TMFalse_ml4096_SRnone_IStoken_236069_RL"
+MODEL_NAME="${SCRATCH}/model_trained/dapo/Qwen3-4B/TMFalse_ml4096_SRbatch_IStoken_360536_RL"
+
 
 MAX_NEW_TOKENS=4096
 
@@ -52,7 +62,7 @@ USER_PROMPT_NAME='base_think_user_prompt.jinja'
 ENABLE_THINKING_MODE=''
 RUN_ONLY_PREDICTIONS=true
 
-CUDA_VISIBLE_DEVICES='6,7' \
+# CUDA_VISIBLE_DEVICES='6,7' \
 MODEL_NAME=$MODEL_NAME \
 MAX_NEW_TOKENS=$MAX_NEW_TOKENS \
 USER_PROMPT_NAME=$USER_PROMPT_NAME \

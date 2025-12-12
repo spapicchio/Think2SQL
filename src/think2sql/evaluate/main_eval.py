@@ -54,7 +54,7 @@ def main_eval(
     dataset = dataset.filter(lambda x: x['sql_execution_time'] != -1)
     logger.info(f"Filtered {initial_len - len(dataset)} samples that have sql_execution_time != -1 (Wrong target SQL)")
 
-    dataset = dataset.select(range(10))
+    # dataset = dataset.select(range(10))
 
     dataset = dataset.map(
         build_messages,

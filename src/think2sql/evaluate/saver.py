@@ -6,6 +6,8 @@ from typing import Protocol, Any
 from pandas import DataFrame
 
 from think2sql.logger import get_logger
+import os
+
 
 logger = get_logger(__name__)
 
@@ -23,8 +25,12 @@ class JSONSaver:
         from datetime import datetime
 
         date_str = datetime.now().strftime("%Y-%m-%d")
-        hours = datetime.now().strftime("%H-%M-%S")
-        path = Path(folder) / date_str / hours
+
+        job_id = os.getenv("JOB_ID", 'unknown_job')
+           
+        path = Path(folder) / date_str
+        if job_id is not None:
+            path = path / f"{job_id}"
         path.mkdir(parents=True, exist_ok=True)
 
         df_path = path / "df.json"
