@@ -1,7 +1,7 @@
 from functools import partial
 from typing import Callable
 
-from NL2SQLEvaluator.evaluator_nodes import BirdEXEvaluator
+from NL2SQLEvaluator.evaluator_nodes import BirdEXEvaluator, EXEvaluator
 from NL2SQLEvaluator.evaluator_nodes.qatch_metrics import QATCHEvaluator
 
 from think2sql.configs import GRPOScriptArguments
@@ -36,14 +36,13 @@ def get_reward_funcs(
     )
     # This is to make sure the function name is correct in the logs and can be used with lighteval
     execution_accuracy_fn.__name__ = "execution_accuracy"
-    qatch_reward_fn = partial(
+
+    execution_accuracy_fn_EX = partial(
         nl2sql_reward,
         relative_db_base_path=script_args.relative_db_base_path,
-        evaluator=QATCHEvaluator(),
-        metric="cp_cr_tc",
+        evaluator=EXEvaluator(),
     )
-    qatch_reward_fn.__name__ = "qatch_reward"
-    # This is to make sure the function name is correct in the logs and can be used with lighteval
+    execution_accuracy_fn_EX.__name__ = "execution_accuracy_EX"
 
     reward_sql_r1_fn = partial(
         reward_sql_r1,
@@ -52,12 +51,34 @@ def get_reward_funcs(
     )
     reward_sql_r1_fn.__name__ = "reward_sql_r1"
 
+    reward_sql_r1_fn_EX = partial(
+        reward_sql_r1,
+        relative_db_base_path=script_args.relative_db_base_path,
+        evaluator=EXEvaluator(),
+    )
+    reward_sql_r1_fn_EX.__name__ = "reward_sql_r1_EX"
+
     arctic_sql_fn = partial(
         reward_arctic_sql,
         relative_db_base_path=script_args.relative_db_base_path,
         evaluator=BirdEXEvaluator(),
     )
     arctic_sql_fn.__name__ = "reward_arctic_sql"
+    arctic_sql_fn_EX = partial(
+        reward_arctic_sql,
+        relative_db_base_path=script_args.relative_db_base_path,
+        evaluator=EXEvaluator(),
+    )
+    arctic_sql_fn_EX.__name__ = "reward_arctic_sql_EX"
+
+    qatch_reward_fn = partial(
+        nl2sql_reward,
+        relative_db_base_path=script_args.relative_db_base_path,
+        evaluator=QATCHEvaluator(),
+        metric="cp_cr_tc",
+    )
+    qatch_reward_fn.__name__ = "qatch_reward"
+
 
     qatch_small_update = partial(
         reward_small_update,
@@ -126,6 +147,7 @@ def get_reward_funcs(
 
     REWARD_FUNCS_REGISTRY = {
         "EX": execution_accuracy_fn,
+        "EX_EX": execution_accuracy_fn_EX,
         "QATCH": qatch_reward_fn,
         "format": format_reward,
         "format_think": format_reward_think,
@@ -135,6 +157,8 @@ def get_reward_funcs(
         "column_recall": reward_selected_columns,
         "SQL-R1": reward_sql_r1_fn,
         "arctic_sql": arctic_sql_fn,
+        "SQL-R1-EX": reward_sql_r1_fn_EX,
+        "arctic_sql_EX": arctic_sql_fn_EX,
         "qatch_small_update": qatch_small_update,
         "ex_small_update": ex_small_update,
         "qatch_complex": qatch_complex_reward,
