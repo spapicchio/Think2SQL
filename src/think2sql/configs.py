@@ -92,7 +92,52 @@ class SFTScriptArguments(trl.ScriptArguments):
         },
     )
 
+    prompt_folder: str = field(
+        default="prompts",
+        metadata={"help": "The folder where the jinja prompts are stored."},
+    )
+
+    user_prompt_name: str = field(
+        default="base_think_user_prompt.jinja",
+        metadata={
+            "help": "The user prompt name to use from the chat template. "
+                    "The available prompts are in `prompt_folder`"
+        },
+    )
+    system_prompt_name: str | None = field(
+        default="base_think_system_prompt.jinja",
+        metadata={
+            "help": "The system prompt name to use from the chat template. "
+                    "The available prompts are in `prompt_folder`"
+        },
+    )
+    train_only_on_generation: bool = field(
+        default=True,
+        metadata={
+            "help": "Whether to train only on the generated part of the response."
+        },
+    )
+    add_test: bool = field(
+        default=False,
+        metadata={
+            "help": "Whether to add test split during training for validation."
+        },
+    )
+    validation_split: Optional[float] = field(
+        default=0.2,
+        metadata={
+            "help": "The fraction of the training data to use for validation if no test split is provided."
+        },
+    )
+
     def __post_init__(self):
+        if self.system_prompt_name is not None and self.system_prompt_name.lower() in (
+                "none",
+                "null",
+                "",
+        ):
+            self.system_prompt_name = None
+
         if self.dataset_name is None and self.dataset_mixture is None:
             raise ValueError(
                 "Either `dataset_name` or `dataset_mixture` must be provided"
@@ -202,12 +247,11 @@ class GRPOConfig(trl.GRPOConfig):
         default=None,
         metadata={"help": "Whether to enable the thinking model for reasoning models."},
     )
-    
+
     local_files_only: bool = field(
         default=False,
         metadata={"help": "Whether to only use local files for the model and tokenizer."},
-    )   
-
+    )
 
     def __post_init__(self):
         super().__post_init__()
@@ -243,7 +287,6 @@ class SFTConfig(trl.SFTConfig):
     """
     args for callbacks, benchmarks etc
     """
-
     callbacks: list[str] = field(
         default_factory=lambda: [],
         metadata={"help": "The callbacks to run during training."},
@@ -272,41 +315,17 @@ class SFTConfig(trl.SFTConfig):
         metadata={"help": "The entity to store runs under."},
     )
     wandb_project: Optional[str] = field(
-        default=None,
+        default='think2sql-qwen3',
         metadata={"help": "The project to store runs under."},
     )
-    wandb_run_group: Optional[str] = field(
-        default=None,
-        metadata={"help": "The group to store runs under."},
-    )
+
     local_files_only: bool = field(
         default=False,
         metadata={"help": "Whether to only use local files for the model and tokenizer."},
-    )   
-
+    )
 
 @dataclass
 class EvaluateArgs(SFTScriptArguments):
-    prompt_folder: str = field(
-        default="prompts",
-        metadata={"help": "The folder where the jinja prompts are stored."},
-    )
-
-    user_prompt_name: str = field(
-        default="base_think_user_prompt.jinja",
-        metadata={
-            "help": "The user prompt name to use from the chat template. "
-                    "The available prompts are in `prompt_folder`"
-        },
-    )
-    system_prompt_name: str = field(
-        default="base_think_system_prompt.jinja",
-        metadata={
-            "help": "The system prompt name to use from the chat template. "
-                    "The available prompts are in `prompt_folder`"
-        },
-    )
-
     cache_db_connections_path: Optional[str] = field(
         default=None,
         metadata={
@@ -334,7 +353,7 @@ class EvaluateArgs(SFTScriptArguments):
         metadata={"help": "Number of experiments for calculating standard deviation."},
     )
 
-    enable_thinking_mode_in_eval: str | None = field(
+    enable_thinking_mode_in_eval: str | bool | None = field(
         default=None,
         metadata={"help": "Whether to enable the thinking model for reasoning models."},
     )
@@ -347,16 +366,9 @@ class EvaluateArgs(SFTScriptArguments):
         default=False,
         metadata={"help": "Whether to only run the prediction without evaluation."},
     )
-    
+
     def __post_init__(self):
         super().__post_init__()
-        if self.system_prompt_name is not None and self.system_prompt_name.lower() in (
-                "none",
-                "null",
-                "",
-        ):
-            self.system_prompt_name = None
-
         if self.enable_thinking_mode_in_eval is None:
             self.enable_thinking_mode_in_eval = False
 

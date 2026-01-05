@@ -2,6 +2,7 @@ from typing import Set, List
 
 import datasets
 from datasets import DatasetDict, concatenate_datasets
+from numba.cuda.initialize import initialize_all
 from sqlglot.optimizer import qualify
 
 from think2sql.configs import SFTScriptArguments
@@ -10,7 +11,7 @@ from think2sql.logger import get_logger
 logger = get_logger(__name__)
 
 
-def get_dataset(args: SFTScriptArguments) -> DatasetDict:
+def get_dataset(args: SFTScriptArguments, filter_fn=None) -> DatasetDict:
     """Load a dataset or a mixture of datasets based on the configuration.
 
     Args:
@@ -24,10 +25,21 @@ def get_dataset(args: SFTScriptArguments) -> DatasetDict:
         data_files = {"train": args.dataset_name}
         if args.dataset_mixture and args.dataset_mixture.test_split_size is not None:
             data_files["test"] = args.dataset_name  # Use the same file for test split
-        return datasets.load_dataset(
+        dataset = datasets.load_dataset(
             "json" if args.dataset_name.endswith(".json") else "csv",
             data_files=data_files,
         )
+        if filter_fn is not None:
+            logger.info("Applying filter function to the dataset")
+            initial_len = len(dataset)
+            dataset = dataset.filter(filter_fn)
+            logger.info(f"Filtered dataset from {initial_len} to {len(dataset)} examples")
+
+        if args.add_test:
+            dataset = dataset["train"].train_test_split(
+                test_size=args.validation_split, shuffle=True, seed=2025
+            )
+        return dataset
 
     if args.dataset_name and not args.dataset_mixture:
         logger.info(f"Loading dataset: {args.dataset_name}")

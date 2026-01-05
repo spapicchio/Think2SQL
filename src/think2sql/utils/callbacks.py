@@ -18,7 +18,7 @@ import subprocess
 from typing import List
 
 from transformers import TrainerCallback
-from transformers.trainer_callback import TrainerControl, TrainerState
+from transformers.trainer_callback import TrainerControl, TrainerState, EarlyStoppingCallback
 from transformers.training_args import TrainingArguments
 
 from .hub import push_to_hub_revision
@@ -69,6 +69,7 @@ class PushToHubRevisionCallback(TrainerCallback):
 
 CALLBACKS = {
     "push_to_hub_revision": PushToHubRevisionCallback,
+    "early_stopping": EarlyStoppingCallback,
 }
 
 

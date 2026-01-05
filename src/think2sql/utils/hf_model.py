@@ -26,7 +26,7 @@ def get_tokenizer(model_args: ModelConfig, training_args: SFTConfig | GRPOConfig
     return tokenizer
 
 
-def get_model(model_args: ModelConfig, training_args: SFTConfig | GRPOConfig) -> AutoModelForCausalLM:
+def get_model(model_args: ModelConfig, training_args: SFTConfig | GRPOConfig):
     """Get the model"""
     torch_dtype = (
         model_args.dtype if model_args.dtype in ["auto", None] else getattr(torch, model_args.dtype)

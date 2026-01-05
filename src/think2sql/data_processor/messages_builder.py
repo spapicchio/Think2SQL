@@ -25,11 +25,10 @@ def build_messages(
     )
 
     if assistant_response_col_name:
-        prompt.append(
-            {"role": "assistant", "content": row[assistant_response_col_name]}
-        )
-
-    return {"prompt": prompt}
+        return {"prompt": prompt,
+                "completion": [{"role": "assistant", "content": row[assistant_response_col_name]}]}
+    else:
+        return {"prompt": prompt}
 
 
 def _render_prompt(template_name: str, prompt_folder: str, **data) -> str:
