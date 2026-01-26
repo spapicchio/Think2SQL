@@ -6,7 +6,7 @@
 #SBATCH --output=./logs/rl/%j.out
 #SBATCH --nodes=2
 #SBATCH --qos=qos_gpu_h100-t3
-#SBATCH --time=20:00:00
+#SBATCH --time=15:00:00
 #SBATCH --cpus-per-task=100
 #SBATCH --signal=B:USR1@30
 #SBATCH --open-mode=append
@@ -58,20 +58,31 @@ LOGGING_DIR_TENSORBOARD="${BASE_WORK}/.tensorboard_logging/${JOB_ID}/"
 # ----------- Custom  Params -----------
 PROMPT_FOLDER="${BASE_WORK}/prompts"
 USER_PROMPT_NAME="base_think_user_prompt.jinja"
-SYSTEM_PROMPT_NAME="base_think_system_prompt.jinja"
-# SYSTEM_PROMPT_NAME="base_think_system_prompt_qwen.jinja"
+# SYSTEM_PROMPT_NAME="base_think_system_prompt.jinja"
+SYSTEM_PROMPT_NAME="base_think_system_prompt_qwen.jinja"
 
 # ----------- Dataset Params -----------
 DATASET_NAME="${BASE_WORK_DATA}/train_bird_processed_with_plan_cols_time.json"
+NUM_EPOCHS=1
+# DATASET_NAME="${BASE_WORK_DATA}/train_bird_processed_with_plan_cols_time_ratio1_2.json"
+# NUM_EPOCHS=2
+# DATASET_NAME="${BASE_WORK_DATA}/train_bird_processed_with_plan_cols_time_ratio1_4.json"
+# NUM_EPOCHS=4
+# DATASET_NAME="${BASE_WORK_DATA}/train_bird_processed_with_plan_cols_time_ratio1_8.json"
+# NUM_EPOCHS=8
+# DATASET_NAME="${BASE_WORK_DATA}/train_bird_processed_with_plan_cols_time_ratio1_16.json"
+# NUM_EPOCHS=16
+# DATASET_NAME="${BASE_WORK_DATA}/train_bird_processed_with_plan_cols_time_ratio1_32.json"
+# NUM_EPOCHS=32
 DB_PATH="${BASE_WORK_DATA}/bird/train/train_databases"
 
 
 # ----------- Training Params -----------
 LOSS_TYPE='dapo'
-REWARD_FUNCS="QATCH format_think"
-REWARD_WEIGHTS="0.95 0.05"
+REWARD_FUNCS="qatch_small_update_with_fm"
+REWARD_WEIGHTS="1.0"
 LEARNING_RATE=1e-6
-NUM_EPOCHS=1
+# NUM_EPOCHS=1
 BS=8
 ACCUMULATION_STEPS=8
 MAX_PROMPT_LENGTH=8000
@@ -83,12 +94,22 @@ NUM_GENERATIONS=16
 NUM_GENERATIONS=$(python ${BASE_WORK}/scripts/utils/get_num_generations.py --num_gpus "$WORLD_SIZE" --bs "$BS" --max_generations "$NUM_GENERATIONS")
 log_section "NUM_GENERATIONS: ${NUM_GENERATIONS}" "${JOB_ID}"
 
-ENABLE_THINKING_MODE='False'
-SCALE_REWARDS='batch'
+# ENABLE_THINKING_MODE='False'
+ENABLE_THINKING_MODE='True'
+SCALE_REWARDS='group'
+# SCALE_REWARDS='batch'
+# SCALE_REWARDS='none'
 SAMPLING_LEVEL='token'
 
+
+# MODEL_BASE='Qwen3-4B-SFT-1143264'
+# MODEL_BASE_PATH="/lustre/fsn1/projects/rech/vno/uld58cl/Think2SQL/model_trained/SFT/Qwen3-4B/TMFalse_ml8000_1143264_SFT"
 MODEL_BASE='Qwen3-4B'
 MODEL_BASE_PATH="Qwen/Qwen3-4B"
+# MODEL_BASE='Qwen3-8B'
+# MODEL_BASE_PATH="Qwen/Qwen3-8B"
+# MODEL_BASE='Qwen3-14B'
+# MODEL_BASE_PATH="Qwen/Qwen3-14B"
 MODEL_BASE_PATH=$(python ${BASE_WORK}/scripts/utils/get_model_path_hf_cache.py --model_id "$MODEL_BASE_PATH")
 
 RL_MODEL_NAME="TM${ENABLE_THINKING_MODE}_ml${MAX_LENGTH}_SR${SCALE_REWARDS}_IS${SAMPLING_LEVEL}_${JOB_ID}_RL"
@@ -106,7 +127,10 @@ echo "SERVER_PORT: ${VLLM_SERVER_PORT}"
 # https://huggingface.co/docs/trl/main/en/vllm_integration
 log_section "Launching VLLM 'launch_trl_vllm ${TRAIN_NODES_STR} $MODEL_BASE_PATH true $VLLM_NODE $VLLM_SERVER_PORT $SLURM_GPUS_PER_NODE ${MAX_MODEL_LENGTH}'"
 
+# Data parallel size = number of GPUs for VLLM
 launch_trl_vllm ${TRAIN_NODES_STR} "$MODEL_BASE_PATH" true "$VLLM_NODE" "$VLLM_SERVER_PORT" "$SLURM_GPUS_PER_NODE" "${MAX_MODEL_LENGTH}"
+# Tensor parallel size = number of GPUs per node
+# launch_trl_vllm ${TRAIN_NODES_STR} "$MODEL_BASE_PATH" true "$VLLM_NODE" "$VLLM_SERVER_PORT" 1 "${MAX_MODEL_LENGTH}" "$SLURM_GPUS_PER_NODE"
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #         Launcher
@@ -135,8 +159,6 @@ TRAINING_PARAMS=(
         --importance_sampling_level "${SAMPLING_LEVEL}"
         --scale_rewards "${SCALE_REWARDS}"
         --mask_truncated_completions 'True'
-
-        --run_name "${SLURM_JOB_NAME}"
         --logging_dir "${LOGGING_DIR_TENSORBOARD}"
         --run_name "${JOB_ID}"
         --log_completions True

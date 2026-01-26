@@ -3,7 +3,10 @@ import argparse
 from huggingface_hub import try_to_load_from_cache
 
 def get_path_from_cache(hub_cache_dir, model_id) -> str:
-    """the number of generations must be a dividend of the number of GPUs times the batch size"""
+    # 1. Check if model_id is already a local path
+    if os.path.isdir(model_id):
+        return model_id
+        
     filepath = try_to_load_from_cache(
         repo_id=model_id,
         filename="config.json",
@@ -11,7 +14,6 @@ def get_path_from_cache(hub_cache_dir, model_id) -> str:
     )
     if isinstance(filepath, str):
         from pathlib import Path
-        # file exists and is cached
         return Path(filepath).parent
 
     return model_id

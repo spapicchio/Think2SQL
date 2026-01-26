@@ -7,7 +7,7 @@
 #SBATCH --output=./logs/rl/%j.out
 #SBATCH --nodes=1
 #SBATCH --qos=qos_gpu_h100-t3
-#SBATCH --time=05:00:00
+#SBATCH --time=03:00:00
 #SBATCH --cpus-per-task=100
 #SBATCH --signal=B:USR1@30
 #SBATCH --open-mode=append
@@ -15,6 +15,8 @@
 set -Eeuo pipefail
 
 # --- env & utils ---
+export JOB_ID=${SLURM_JOB_ID:-MY_SLURM_JOB_ID}
+
 if [[ -n "${SLURM_JOB_ID:-}" ]]; then
   echo "Running inside SLURM job ${SLURM_JOB_ID}"
   export BASE_WORK="${SCRATCH}/Think2SQL"
@@ -31,26 +33,30 @@ source "${BASE_WORK}/scripts/utils/utils.sh"
 
 # MODEL_NAME='Qwen/Qwen3-0.6B'
 # MODEL_NAME='Qwen/Qwen3-1.7B'
-# MODEL_NAME='Qwen/Qwen3-4B-Instruct-2507'
+# MODEL_NAME='Qwen/Qwen3-4B'
 # MODEL_NAME='Qwen/Qwen3-8B'
-MODEL_NAME='Qwen/Qwen3-4B'
-# MODEL_NAME='Qwen/Qwen3-14B'
+# MODEL_NAME='Qwen/Qwen3-4B'
+MODEL_NAME='Qwen/Qwen3-14B'
+# MODEL_NAME='Qwen/Qwen3-32B'
 
+# MODEL_NAME='Qwen/Qwen3-Coder-30B-A3B-Instruct' # Must be specified with ENABLE_THINKING_MODE=''
 
-MAX_NEW_TOKENS=2048
+MAX_NEW_TOKENS=4096
 
-USER_PROMPT_NAME="omnisql_user_prompt.jinja"
 SYSTEM_PROMPT_NAME=''
+USER_PROMPT_NAME="omnisql_user_prompt.jinja"
 
-ENABLE_THINKING_MODE='false'
+ENABLE_THINKING_MODE=''
+RUN_ONLY_PREDICTIONS=true
 
-CUDA_VISIBLE_DEVICES='5' \
+# CUDA_VISIBLE_DEVICES='5' \
+# CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES \
 MODEL_NAME=$MODEL_NAME \
 MAX_NEW_TOKENS=$MAX_NEW_TOKENS \
 USER_PROMPT_NAME=$USER_PROMPT_NAME \
 SYSTEM_PROMPT_NAME=$SYSTEM_PROMPT_NAME \
 ENABLE_THINKING_MODE=$ENABLE_THINKING_MODE \
-CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES \
+RUN_ONLY_PREDICTIONS=$RUN_ONLY_PREDICTIONS \
 GREEDY_TEMP="0.7" \
 GREEDY_TOP_P="0.8" \
 GREEDY_TOP_K="20" \

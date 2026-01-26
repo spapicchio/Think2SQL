@@ -114,7 +114,7 @@ LAUNCHER=(
         --scale_rewards "${SCALE_REWARDS}"
         --importance_sampling_level "${SAMPLING_LEVEL}"
         --mask_truncated_completions 'True'
-        --top_entropy_quantile 0.2
+        # --top_entropy_quantile 0.2
 
         --logging_dir "${LOGGING_DIR_TENSORBOARD}"
         --run_name "${JOB_NAME}"

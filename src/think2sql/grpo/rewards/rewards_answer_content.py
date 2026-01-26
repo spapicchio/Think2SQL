@@ -165,7 +165,7 @@ def reward_small_update(completions: list[list[dict]],
         relative_db_base_path=relative_db_base_path,
     )
     scores = []
-    matches = [1] * len(completions) if not include_format_reward else format_reward(completions, **kwargs)
+    matches = [1] * len(completions) if not include_format_reward else format_reward(completions, reasoning_tag="think", **kwargs)
     for completion, exec_pred, exec_target, match in zip(model_predictions, model_predictions_results,
                                                          target_sql_results, matches):
         if isinstance(exec_pred[0], ExecutorError) or isinstance(exec_target[0], ExecutorError):

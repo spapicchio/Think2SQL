@@ -3,6 +3,7 @@ import os
 import datasets
 import pandas as pd
 import transformers
+from transformers import EarlyStoppingCallback
 from transformers.trainer_utils import get_last_checkpoint
 from trl import ModelConfig, SFTTrainer, get_peft_config
 
@@ -89,7 +90,6 @@ class SFTCustomTrainer:
         filter_fn = lambda x: x['ex_gemini-3-flash-preview_0'] == 1
         dataset = get_dataset(self.script_args, filter_fn)
 
-
         wrong_queries = pd.read_json('train_wrong_queries.json').SQL.values
         initial_len = len(dataset)
         dataset = dataset.filter(
@@ -139,7 +139,9 @@ class SFTCustomTrainer:
             else None,
             processing_class=tokenizer,
             peft_config=get_peft_config(self.model_args),
-            callbacks=get_callbacks(self.training_args, self.model_args),
+            callbacks=get_callbacks(self.training_args, self.model_args) + [
+                EarlyStoppingCallback(early_stopping_patience=3)
+            ],
         )
 
         ###############

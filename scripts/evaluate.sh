@@ -36,13 +36,13 @@ if [[ -n "${SLURM_JOB_ID:-}" ]]; then
   setup_idris
   # label, dataset, db_path
   datasets=(
-    "SPIDER-test"       "${BASE_WORK_DATA}/processed/test_spider_processed_with_plan_cols_time.json"                "${BASE_WORK_DATA}/spider/test_database"
-    "Bird-dev"          "${BASE_WORK_DATA}/processed/dev_bird_processed_with_plan_cols_time.json"                   "${BASE_WORK_DATA}/bird/dev_20240627/dev_databases"
-    "SPIDER-DK"         "${BASE_WORK_DATA}/processed/dev_spider_dk_processed_with_plan_cols_time.json"              "${BASE_WORK_DATA}/Spider-DK/database"
-    "SPIDER-SYN"        "${BASE_WORK_DATA}/processed/dev_spider_syn_processed_with_plan_cols_time.json"             "${BASE_WORK_DATA}/spider/test_database"
-    "SPIDER-REALISTIC"  "${BASE_WORK_DATA}/processed/dev_spider_realistic_processed_with_plan_cols_time.json"       "${BASE_WORK_DATA}/spider/test_database"
-    # "sciencebenchmark"  "data/processed/dev_sciencebenchmark_processed_with_plan_cols_time.json"       "data/sciencebenchmark/databases"
-    # "EHRSQL"            "data/processed/dev_ehrsql_processed_with_plan_cols_time.json"                 "data/EHRSQL/database"
+    # "SPIDER-test"       "${BASE_WORK_DATA}/processed/test_spider_processed_with_plan_cols_time.json"                "${BASE_WORK_DATA}/spider/test_database"
+    # "Bird-dev"          "${BASE_WORK_DATA}/processed/dev_bird_processed_with_plan_cols_time.json"                   "${BASE_WORK_DATA}/bird/dev_20240627/dev_databases"
+    # "SPIDER-DK"         "${BASE_WORK_DATA}/processed/dev_spider_dk_processed_with_plan_cols_time.json"              "${BASE_WORK_DATA}/Spider-DK/database"
+    # "SPIDER-SYN"        "${BASE_WORK_DATA}/processed/dev_spider_syn_processed_with_plan_cols_time.json"             "${BASE_WORK_DATA}/spider/test_database"
+    # "SPIDER-REALISTIC"  "${BASE_WORK_DATA}/processed/dev_spider_realistic_processed_with_plan_cols_time.json"       "${BASE_WORK_DATA}/spider/test_database"
+    # "sciencebenchmark"  "${BASE_WORK_DATA}/processed/dev_sciencebenchmark_processed_with_plan_cols_time.json"       "${BASE_WORK_DATA}/sciencebenchmark/databases"
+    "EHRSQL"            "${BASE_WORK_DATA}/processed/dev_ehrsql_processed_with_plan_cols_time.json"                 "${BASE_WORK_DATA}/EHRSQL/database"
   )
 else
   source "${BASE_WORK}/scripts/utils/utils_clenup_vllm_if_crash.sh"

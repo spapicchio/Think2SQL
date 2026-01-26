@@ -68,6 +68,7 @@ launch_trl_vllm() {
   local port="${5:-0}"              # 0 = auto-pick free port
   local dps="${6:-1}"
   local max_model_length="${7:-2048}"
+  local tps="${8:-1}"
 
   local launcher=(
   python -m trl.scripts.vllm_serve
@@ -75,6 +76,7 @@ launch_trl_vllm() {
   --host "$host"
   --port "$port"
   --data-parallel-size "${dps}" \
+  --tensor-parallel-size "${tps}" \
   --gpu-memory-utilization 0.85 \
   --log_level 'warning' \
   --max_model_len "${max_model_length}"

@@ -38,7 +38,7 @@ else
 fi
 
 
-MY_SLURM_JOB_ID="${FAKE_JOB_ID}"
+export MY_SLURM_JOB_ID="${FAKE_JOB_ID}"
 
 
 DATE_DIR="$(date +%Y-%m-%d)"

@@ -22,6 +22,7 @@ from transformers.trainer_callback import TrainerControl, TrainerState, EarlySto
 from transformers.training_args import TrainingArguments
 
 from .hub import push_to_hub_revision
+from ..logger import get_logger
 
 
 def is_slurm_available() -> bool:
@@ -75,9 +76,12 @@ CALLBACKS = {
 
 def get_callbacks(train_config, model_config) -> List[TrainerCallback]:
     callbacks = []
+    logger = get_logger(__name__)
     for callback_name in train_config.callbacks:
         if callback_name not in CALLBACKS:
-            raise ValueError(f"Callback {callback_name} not found in CALLBACKS.")
+            # raise ValueError(f"Callback {callback_name} not found in CALLBACKS.")
+            logger.warning(f"Callback {callback_name} not found in CALLBACKS. Skipping.")
+            continue
         callbacks.append(CALLBACKS[callback_name](model_config))
 
     return callbacks
