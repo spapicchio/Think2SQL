@@ -2,8 +2,8 @@
 DEVICE_TRL='0,1,2,3'
 NUM_GPUS=4
 
-DEVICE_VLLM='4,5'
-NUM_GPU_RESERVED_VLLM=2
+DEVICE_VLLM='7'
+NUM_GPU_RESERVED_VLLM=1
 
 echo "NUM_GPUS: ${NUM_GPUS}"
 echo "GPU_VLLM: ${DEVICE_VLLM}"
@@ -19,7 +19,6 @@ source "${BASE_WORK}/scripts/utils/utils_clenup_vllm_if_crash.sh"
 # set the JOB_ID to the one you want to resume from
 # JOB_ID='aba0bebc'
 # export WANDB_RUN_ID='mrondefv'
-
 JOB_ID=${MY_SLURM_JOB_ID}
 
 log_section "JOB_ID = ${JOB_ID}" "${JOB_ID}"
@@ -33,20 +32,25 @@ LOGGING_DIR_TENSORBOARD="${BASE_WORK}/.tensorboard_logging/${JOB_ID}/"
 
 # ----------- Custom  Params -----------
 PROMPT_FOLDER="${BASE_WORK}/prompts"
-SYSTEM_PROMPT_NAME="base_think_system_prompt_qwen.jinja"
-# SYSTEM_PROMPT_NAME="base_think_system_prompt.jinja"
+#SYSTEM_PROMPT_NAME="base_think_system_prompt_qwen.jinja"
+SYSTEM_PROMPT_NAME="base_think_system_prompt.jinja"
 USER_PROMPT_NAME="base_think_user_prompt.jinja"
 
 # ----------- Dataset Params -----------
-DATASET_NAME="${BASE_WORK}/data/omnisql/data/processed/train_bird_processed_with_plan_cols_time.json"
+# DATASET_NAME="${BASE_WORK}/data/omnisql/data/processed/train_bird_processed_with_plan_cols_time.json"
+# DATASET_NAME="${BASE_WORK}/data/omnisql/data/processed/train_bird_processed_with_plan_cols_time_ratio1_2.json" # 2 epoch
+# DATASET_NAME="${BASE_WORK}/data/omnisql/data/processed/train_bird_processed_with_plan_cols_time_ratio1_4.json" # 4 epoch
+# DATASET_NAME="${BASE_WORK}/data/omnisql/data/processed/train_bird_processed_with_plan_cols_time_ratio1_8.json" # 8 epoch
+# DATASET_NAME="${BASE_WORK}/data/omnisql/data/processed/train_bird_processed_with_plan_cols_time_ratio1_16.json" # 16 epoch
+DATASET_NAME="${BASE_WORK}/data/omnisql/data/processed/train_bird_processed_with_plan_cols_time_ratio1_32.json" # 32 epoch
 DB_PATH="${BASE_WORK}/data/omnisql/data/bird/train/train_databases"
 
 # ----------- Training Params -----------
 LOSS_TYPE='dapo'
-REWARD_FUNCS="QATCH format_think"
-REWARD_WEIGHTS="0.95 0.05"
+REWARD_FUNCS="qatch_small_update_with_fm"
+REWARD_WEIGHTS="1.0"
 LEARNING_RATE=1e-6
-NUM_EPOCHS=1
+NUM_EPOCHS=32
 BS=8
 ACCUMULATION_STEPS=8
 MAX_PROMPT_LENGTH=8000
@@ -66,8 +70,8 @@ echo "NUM_GENERATIONS: ${NUM_GENERATIONS}"
 MODEL_BASE='Qwen3-4B'
 MODEL_BASE_PATH="Qwen/Qwen3-4B"
 
-ENABLE_THINKING_MODE='True'
-SCALE_REWARDS='batch'
+ENABLE_THINKING_MODE='False'
+SCALE_REWARDS='group'
 SAMPLING_LEVEL='token'
 
 RL_MODEL_NAME="TM${ENABLE_THINKING_MODE}_ml${MAX_LENGTH}_SR${SCALE_REWARDS}_IS${SAMPLING_LEVEL}_${JOB_ID}_RL"

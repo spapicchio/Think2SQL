@@ -84,6 +84,9 @@ def main_eval(
     logger.info(f"Sampling Params: {sampling_params}")
 
     model_name = vllm_config.model_name.split('/')[-1].replace('.json', '').replace('.', '_')
+    if evaluate_args.enable_thinking_mode_in_eval:
+        model_name += '_thinking_mode'
+
     dataset_name = "_".join(evaluate_args.dataset_name.replace('.json', '').split('/'))
     strategy = 'greedy' if generation_params.number_of_completions == 1 else 'majority_voting'
 

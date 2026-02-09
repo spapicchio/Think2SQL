@@ -30,6 +30,7 @@ def utils_execute_target_and_pred_sql(
         pred_sqls: list[str] | list[list[str]],
         timeout: list[float],
         relative_db_base_path: str,
+        cache_db_file=".nl2sql_cache/train_omnisql_cache.sqlite",
 ) -> tuple[list[list[OutputTable | ExecutorError]], list[list[OutputTable | ExecutorError]]]:
     if not isinstance(target_sqls, list) or not isinstance(pred_sqls, list) or not isinstance(db_ids, list):
         raise ValueError(
@@ -67,7 +68,7 @@ def utils_execute_target_and_pred_sql(
     executed_queries = SQLiteDBExecutor().execute_queries(
         tasks=tasks,
         cache_db=SqliteCache(),
-        cache_db_file=".nl2sql_cache/train_omnisql_cache.sqlite",
+        cache_db_file=cache_db_file,
         num_cpus=num_cpus,
     )
 

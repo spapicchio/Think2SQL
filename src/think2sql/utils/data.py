@@ -2,7 +2,6 @@ from typing import Set, List
 
 import datasets
 from datasets import DatasetDict, concatenate_datasets
-from numba.cuda.initialize import initialize_all
 from sqlglot.optimizer import qualify
 
 from think2sql.configs import SFTScriptArguments
@@ -31,9 +30,9 @@ def get_dataset(args: SFTScriptArguments, filter_fn=None) -> DatasetDict:
         )
         if filter_fn is not None:
             logger.info("Applying filter function to the dataset")
-            initial_len = len(dataset)
+            initial_len = len(dataset['train'])
             dataset = dataset.filter(filter_fn)
-            logger.info(f"Filtered dataset from {initial_len} to {len(dataset)} examples")
+            logger.info(f"Filtered dataset from {initial_len} to {len(dataset['train'])} examples")
 
         if args.add_test:
             dataset = dataset["train"].train_test_split(

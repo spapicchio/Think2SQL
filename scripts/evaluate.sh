@@ -36,12 +36,12 @@ if [[ -n "${SLURM_JOB_ID:-}" ]]; then
   setup_idris
   # label, dataset, db_path
   datasets=(
-    # "SPIDER-test"       "${BASE_WORK_DATA}/processed/test_spider_processed_with_plan_cols_time.json"                "${BASE_WORK_DATA}/spider/test_database"
-    # "Bird-dev"          "${BASE_WORK_DATA}/processed/dev_bird_processed_with_plan_cols_time.json"                   "${BASE_WORK_DATA}/bird/dev_20240627/dev_databases"
-    # "SPIDER-DK"         "${BASE_WORK_DATA}/processed/dev_spider_dk_processed_with_plan_cols_time.json"              "${BASE_WORK_DATA}/Spider-DK/database"
-    # "SPIDER-SYN"        "${BASE_WORK_DATA}/processed/dev_spider_syn_processed_with_plan_cols_time.json"             "${BASE_WORK_DATA}/spider/test_database"
-    # "SPIDER-REALISTIC"  "${BASE_WORK_DATA}/processed/dev_spider_realistic_processed_with_plan_cols_time.json"       "${BASE_WORK_DATA}/spider/test_database"
-    # "sciencebenchmark"  "${BASE_WORK_DATA}/processed/dev_sciencebenchmark_processed_with_plan_cols_time.json"       "${BASE_WORK_DATA}/sciencebenchmark/databases"
+    "SPIDER-test"       "${BASE_WORK_DATA}/processed/test_spider_processed_with_plan_cols_time.json"                "${BASE_WORK_DATA}/spider/test_database"
+    "Bird-dev"          "${BASE_WORK_DATA}/processed/dev_bird_processed_with_plan_cols_time.json"                   "${BASE_WORK_DATA}/bird/dev_20240627/dev_databases"
+    "SPIDER-DK"         "${BASE_WORK_DATA}/processed/dev_spider_dk_processed_with_plan_cols_time.json"              "${BASE_WORK_DATA}/Spider-DK/database"
+    "SPIDER-SYN"        "${BASE_WORK_DATA}/processed/dev_spider_syn_processed_with_plan_cols_time.json"             "${BASE_WORK_DATA}/spider/test_database"
+    "SPIDER-REALISTIC"  "${BASE_WORK_DATA}/processed/dev_spider_realistic_processed_with_plan_cols_time.json"       "${BASE_WORK_DATA}/spider/test_database"
+    "sciencebenchmark"  "${BASE_WORK_DATA}/processed/dev_sciencebenchmark_processed_with_plan_cols_time.json"       "${BASE_WORK_DATA}/sciencebenchmark/databases"
     "EHRSQL"            "${BASE_WORK_DATA}/processed/dev_ehrsql_processed_with_plan_cols_time.json"                 "${BASE_WORK_DATA}/EHRSQL/database"
   )
 else
@@ -55,8 +55,8 @@ else
     "SPIDER-DK"         "data/omnisql/data/processed/dev_spider_dk_processed_with_plan_cols_time.json"              "data/omnisql/data/Spider-DK/database"
     "SPIDER-SYN"        "data/omnisql/data/processed/dev_spider_syn_processed_with_plan_cols_time.json"             "data/omnisql/data/spider/test_database"
     "SPIDER-REALISTIC"  "data/omnisql/data/processed/dev_spider_realistic_processed_with_plan_cols_time.json"       "data/omnisql/data/spider/test_database"
-    # "sciencebenchmark"  "data/omnisql/data/processed/dev_sciencebenchmark_processed_with_plan_cols_time.json"       "data/omnisql/data/sciencebenchmark/databases"
-    # "EHRSQL"            "data/omnisql/data/processed/dev_ehrsql_processed_with_plan_cols_time.json"                 "data/omnisql/data/EHRSQL/database"
+    "sciencebenchmark"  "data/omnisql/data/processed/dev_sciencebenchmark_processed_with_plan_cols_time.json"       "data/omnisql/data/sciencebenchmark/databases"
+    "EHRSQL"            "data/omnisql/data/processed/dev_ehrsql_processed_with_plan_cols_time.json"                 "data/omnisql/data/EHRSQL/database"
   )
 fi
 
@@ -169,7 +169,8 @@ run_suite() {
 # run GREEDY
 GREEDY_TEMP="${GREEDY_TEMP:-0.0}"
 GREEDY_TOP_P="${GREEDY_TOP_P:-1.0}"
-GREEDY_TOP_K="${GREEDY_TOP_K:-0}"
+base_topk='-1'
+GREEDY_TOP_K="${GREEDY_TOP_K:-$base_topk}"
 GREEDY_REP_PENALTY="${GREEDY_REP_PENALTY:-1.0}"
 GREEDY_NUM_SAMPLES="${GREEDY_NUM_SAMPLES:-1}"
 run_suite "$MODEL_NAME" "$GREEDY_TEMP" "$GREEDY_TOP_P" "$GREEDY_TOP_K"  "$GREEDY_REP_PENALTY" "$GREEDY_NUM_SAMPLES"

@@ -322,6 +322,7 @@ def nl2sql_reward(
         relative_db_base_path: str,
         sql_execution_time: list[float],
         log: bool = True,
+        cache_db_file=".nl2sql_cache/train_omnisql_cache.sqlite",
         *args,
         **kwargs,
 ) -> list[float]:
@@ -339,6 +340,7 @@ def nl2sql_reward(
         pred_sqls=model_predictions,
         timeout=sql_execution_time,
         relative_db_base_path=relative_db_base_path,
+        cache_db_file=cache_db_file
     )
     # make evaluation
     # in case of execution errors, the task will have empty predictions or targets

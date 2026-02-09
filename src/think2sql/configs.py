@@ -353,7 +353,7 @@ class EvaluateArgs(SFTScriptArguments):
         metadata={"help": "Number of experiments for calculating standard deviation."},
     )
 
-    enable_thinking_mode_in_eval: str | bool | None = field(
+    enable_thinking_mode_in_eval: str | None = field(
         default=None,
         metadata={"help": "Whether to enable the thinking model for reasoning models."},
     )
