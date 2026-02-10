@@ -45,7 +45,7 @@ class EvalGenerationParams:
 class EvalVLLMConfig:
     # --- Model & runtime ---
     model_name: str = field(
-        default="simone-papicchio/Think2SQL-7B",
+        default="Think2SQL-7B",
         metadata={"help": "Hugging Face repo or local path to the model."},
     )
     dtype: str = field(

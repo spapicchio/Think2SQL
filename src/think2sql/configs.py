@@ -53,7 +53,7 @@ class SFTScriptArguments(trl.ScriptArguments):
 
     # Override the dataset_name to make it optional
     dataset_name: Optional[str] = field(
-        default="simone-papicchio/bird",
+        default="bird",
         metadata={"help": "Dataset name. Can be omitted if using dataset_mixture."},
     )
 
@@ -231,7 +231,7 @@ class GRPOConfig(trl.GRPOConfig):
     )
 
     wandb_entity: Optional[str] = field(
-        default="spapicchio-politecnico-di-torino",
+        default="your entity",
         metadata={"help": "The entity to store runs under."},
     )
     wandb_project: Optional[str] = field(
@@ -311,7 +311,7 @@ class SFTConfig(trl.SFTConfig):
         default=False, metadata={"help": "Whether to push to a Hub revision/branch."}
     )
     wandb_entity: Optional[str] = field(
-        default="spapicchio-politecnico-di-torino",
+        default="your entity",
         metadata={"help": "The entity to store runs under."},
     )
     wandb_project: Optional[str] = field(

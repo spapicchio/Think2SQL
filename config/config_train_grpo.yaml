@@ -41,7 +41,7 @@ output_dir: null  # If the model is present, the training will resume from the l
 #####################
 # DATASET ARGUMENTS
 #####################
-dataset_name: 'simone-papicchio/bird'
+dataset_name: ''
 dataset_train_split: train
 relative_db_base_path: 'data/bird/train_databases'
 
@@ -96,6 +96,6 @@ top_p: 0.95              # vendor default (add this; it’s in the model config)
 top_k: 20               # vendor default
 repetition_penalty: 1.1 # vendor default
 # optim: adamw_8bit
-wandb_entity: spapicchio-politecnico-di-torino
+wandb_entity: 'your entity'
 wandb_project: think2sql-qwen3
 warmup_ratio: 0.1

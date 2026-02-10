@@ -2,24 +2,6 @@
 <h1>Think2SQL: Blueprinting Reward Density and Advantage Scaling for Effective Text-to-SQL Reasoning</h1>
 </div>
 
-<div align="center">
-<p>
-    <a href="https://scholar.google.com/citations?hl=it&user=tA30bFcAAAAJ">Simone Papicchio</a><sup>1,2</sup>&nbsp;&nbsp;
-    <a href="https://scholar.google.com/citations?user=lTt86awAAAAJ&hl=it">Simone Rossi</a><sup>2</sup>&nbsp;&nbsp;
-    <a href="https://scholar.google.com/citations?user=0uIAXl8AAAAJ&hl=en&oi=ao">Luca Cagliero</a><sup>1</sup>&nbsp;&nbsp;
-    <a href="https://scholar.google.com/citations?user=YwoezYX7JVgJ&hl=en&oi=ao">Paolo Papotti</a><sup>2</sup>&nbsp;&nbsp;
-</p>
-
-<p>
-    <sup>1</sup>Politecnico di Torino, Turin, Italy
-    <sup>2</sup>EURECOM, Sophia Antipolis, France
-</p>
-</div>
-
-<div align="center">
-<p>
-<i class="fa-solid fa-envelope"></i> Contact: <a href="mailto:simone.papicchio@polito.it">simone.papicchio@polito.it</a>
-</p>
 </div>
 
 
@@ -58,13 +40,13 @@ We are excited to release our Think2SQL model weights along with the Gemini3-Fla
 
 | Model  | Size | HuggingFace Link | License
 |-------------|-------------|------|------|
-| Think2SQL (4B) | 4B | [🤗 Download](https://huggingface.co/anonymous-2321/Think2SQL-4B)  | [Apache 2.0 ](https://www.apache.org/licenses/LICENSE-2.0)
-| Think2SQL (8B) | 8B | [🤗 Download](https://huggingface.co/anonymous-2321/Think2SQL-8B)  | [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) 
-| Think2SQL (14B) | 14B | [🤗 Download](https://huggingface.co/anonymous-2321/Think2SQL-14B) | [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) 
+| Think2SQL (4B) | 4B | [🤗 https://huggingface.co/anonymous-2321/Think2SQL-4B](https://huggingface.co/anonymous-2321/Think2SQL-4B)  | [Apache 2.0 ](https://www.apache.org/licenses/LICENSE-2.0)
+| Think2SQL (8B) | 8B | [🤗 https://huggingface.co/anonymous-2321/Think2SQL-8B](https://huggingface.co/anonymous-2321/Think2SQL-8B)  | [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) 
+| Think2SQL (14B) | 14B | [🤗 https://huggingface.co/anonymous-2321/Think2SQL-14B](https://huggingface.co/anonymous-2321/Think2SQL-14B) | [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) 
 
 | Name  | Source | HuggingFace Link | License
 |-------------|-------------|------|------|
-| Distilled-SFT | Gemini3-Flash  | [🤗 Download](https://huggingface.co/datasets/anonymous-2321/bird-train-gemini3-flash) | [Gemini API Terms of Service](https://ai.google.dev/gemini-api/terms)
+| Distilled-SFT | Gemini3-Flash  | [🤗 https://huggingface.co/datasets/anonymous-2321/bird-train-gemini3-flash](https://huggingface.co/datasets/anonymous-2321/bird-train-gemini3-flash) | [Gemini API Terms of Service](https://ai.google.dev/gemini-api/terms)
 
 
 
